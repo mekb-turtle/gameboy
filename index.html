@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>meGB</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="UTF-8">
+	<style>
+* {
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+body {
+	overflow: hidden;
+	background: #121216;
+	/*font-family: Ubuntu, Tahoma, "Segoe UI", sans-serif;*/
+	font-family: "Ubuntu Mono", Consolas, "Courier New", monospace;
+	font-size: 12px;
+	line-height: 12px;
+	padding: 0px;
+	margin: 0px;
+	color: #efefef;
+	text-decoration: none;
+}
+a {
+	color: #7f7fff;
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+canvas {
+  object-fit: contain;
+	width: 100vw;
+	height: calc(100vh - 16px);
+  image-rendering: pixelated;
+}
+.details {
+	position: fixed;
+	bottom: 0px;
+	left: 0px;
+	width: 100vw;
+	height: 14px;
+	background: inherit;
+	white-space: nowrap;
+	overflow: hidden;
+}
+	</style>
+</head>
+<body>
+	<canvas id="canvas" width="160" height="144"></canvas>
+	<div id="details" class="details"></div>
+</body>
+</html>

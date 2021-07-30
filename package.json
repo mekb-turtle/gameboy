@@ -1,0 +1,15 @@
+{
+  "name": "gbemu",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "mekb",
+  "devDependencies": {
+    "electron": "^14.0.0-beta.17"
+  },
+  "dependencies": {
+    "serverboy": "^0.0.7",
+    "waveheader": "^0.0.2"
+  }
+}
