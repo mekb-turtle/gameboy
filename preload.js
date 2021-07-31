@@ -10,6 +10,16 @@ window.addEventListener("DOMContentLoaded", () => {
   ipcRenderer.on("rendergb", (e, scr) => {
     s = scr;
   });
+  ipcRenderer.on("theme", (e, theme) => {
+    if (!theme) {
+      var z = document.getElementById("s");
+      z.innerText = z.innerText.replace(/121216/g,"EEEEEEREPLACE").replace(/ffffff/g,"121216").replace(/EEEEEEREPLACE/g,"ffffff");
+    }
+  });
+  window.onbeforeunload = e => {
+    ipcRenderer.invoke("quitgame");
+    return false;
+  };
   var keybinds = {
     "ArrowLeft": "LEFT",
     "ArrowRight": "RIGHT",

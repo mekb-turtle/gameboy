@@ -9,6 +9,7 @@
     "electron": "^14.0.0-beta.17"
   },
   "dependencies": {
+    "clone-buffer": "^1.0.0",
     "serverboy": "^0.0.7"
   }
 }
