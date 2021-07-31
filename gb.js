@@ -2,7 +2,11 @@ if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`);
   return;
 }
-module.exports = (electron, window_, zErr) => {
+module.exports = (electron, window_, zErr, zzz) => {
+  const speaker_ = require("speaker");
+  const speaker = new speaker_({
+
+  });
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -50,7 +54,7 @@ module.exports = (electron, window_, zErr) => {
   const openRom = async () => {
     saveBeforeUnload();
     electron.dialog.showOpenDialog(window_, {
-      properties: ["openFile", "showHiddenFiles"],
+      properties: ["openFile"],
       buttonLabel: "Open",
       filters: [
         {name: "Gameboy ROMs (gb, gbc)", extensions: ["gb", "gbc"]},
@@ -179,7 +183,7 @@ module.exports = (electron, window_, zErr) => {
     if (checkIfRom()) return;
     saveBeforeUnload();
     electron.dialog.showOpenDialog(window_, {
-      properties: ["openFile", "showHiddenFiles"],
+      properties: ["openFile"],
       buttonLabel: "Open",
       filters: [
         {name: "Save state file (st, mgbst)", extensions: ["st", "mgbst"]},
@@ -212,7 +216,7 @@ module.exports = (electron, window_, zErr) => {
     var stateFile = Buffer.concat([romHash, Buffer.from(mem)]);
     if (!stateFile) return;
     electron.dialog.showSaveDialog(window_, {
-      properties: ["createDirectory", "showHiddenFiles"],
+      properties: ["createDirectory"],
       buttonLabel: "Save",
       filters: [
         {name: "Save state file (st, mgbst)", extensions: ["st", "mgbst"]},
@@ -246,6 +250,7 @@ module.exports = (electron, window_, zErr) => {
     if (!rom) return;
     gameboy.pressKeys(Object.keys(buttonsDown).filter(e => buttonsDown[e]).map(e => Gameboy.KEYMAP[e]));
     gameboy.doFrame();
+    if (getPrivate().frames==100) console.log(getPrivate());
     canSave = true;
   };
   var saveDisplayTime = 0;
@@ -262,7 +267,7 @@ module.exports = (electron, window_, zErr) => {
     } catch {}
     if (saveDisplayTime > 0) --saveDisplayTime;
     try {
-      window_.webContents.send("details", `${rom?(paused?`Paused`:`Playing`):``} ${name}${saving?" - Saving":(saveDisplayTime>0?" - Saved":"")}`);
+      window_.webContents.send("details", `${rom?(paused?`Paused`:`Playing`):``} ${name}${saving?" - Saving":(saveDisplayTime>0?" - Saved":"")} - ${getPrivate().frames.toString().padStart(6,0)}`);
     } catch {}
   };
   var paused = false;
@@ -277,15 +282,16 @@ module.exports = (electron, window_, zErr) => {
     await saveSave();
   }, Math.floor(10e3));
   const togglePaused = () => {
-    if (checkIfRom(true)) return;
     paused = !paused;
+    zzz(paused);
   };
   const frameAdvance = () => {
-    if (checkIfRom(true)) return;
     if (!paused) {
       paused = true;
       return;
     }
+    zzz(paused);
+    if (checkIfRom(true)) return;
     frame();
     sendFrame();
   };

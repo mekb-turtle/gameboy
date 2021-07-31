@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "clone-buffer": "^1.0.0",
-    "serverboy": "^0.0.7"
+    "serverboy": "^0.0.7",
+    "speaker": "^0.5.3"
   }
 }

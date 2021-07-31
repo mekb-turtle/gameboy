@@ -36,8 +36,11 @@ const zErr = (err) => {
   console.error(err);
   electron.dialog.showErrorBox(typeof err == "string" ? err : err.name || "Error", typeof err == "string" ? "" : err.stack || err.toString());
 }
-const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave }
-  = require("./gb.js")(electron, window_, zErr);
+const zz = (m) => electron.Menu.setApplicationMenu(electron.Menu.buildFromTemplate(m));
+var menu = [];
+const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.label == "Pause" || e.label == "Resume").indexOf(true)].label = p ? "Resume" : "Pause"; zz(menu); };
+var { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave }
+  = require("./gb.js")(electron, window_, zErr, zzz);
 const infoDialog = () => {
   electron.dialog.showMessageBox(window_, {
     message: `meGB
@@ -45,8 +48,8 @@ Made by mekb the turtle
 Uses serverboy package by Daniel Shumway`
   });
 };
-window_.webContents.send("theme", theme)
-const menu = electron.Menu.buildFromTemplate([
+window_.webContents.send("theme", theme);
+menu = [
   {
     label: "File",
     submenu: [
@@ -58,15 +61,11 @@ const menu = electron.Menu.buildFromTemplate([
       { label: "Auto save",           click: m=>setAutosave(m.checked),   accelerator: "CmdOrCtrl+Shift+S", checked: true, type: "checkbox" },
       { label: "Manual save file",    click: ()=>saveSave(true),          accelerator: "CmdOrCtrl+S" },
       { type: "separator" },
+      { label: "Pause",               click: togglePaused,               accelerator: "Space" },
+      { label: "Frame advance",       click: frameAdvance,                accelerator: "\\" },
+      { type: "separator" },
       { label: "Open state file",     click: openState,                   accelerator: "CmdOrCtrl+I" },
       { label: "Save state file",     click: saveState,                   accelerator: "CmdOrCtrl+D" },
-    ]
-  },
-  {
-    label: "Emulation",
-    submenu: [
-      { label: "Pause/Resume",        click: togglePaused, accelerator: "Space" },
-      { label: "Frame advance",       click: frameAdvance, accelerator: "\\" },
     ]
   },
   {
@@ -90,8 +89,8 @@ const menu = electron.Menu.buildFromTemplate([
       { label: "Exit",                click: () => { electron.app.quit(); } },
     ]
   },
-]);
-electron.Menu.setApplicationMenu(menu);
+];
+zz(menu);
 window_.loadFile(path.join(__dirname, "index.html"));
 //window_.webContents.openDevTools();
 electron.app.on("window-all-closed", () => {
