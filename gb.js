@@ -3,10 +3,6 @@ if (require.main === module) {
   return;
 }
 module.exports = (electron, window_, zErr, zzz) => {
-  const speaker_ = require("speaker");
-  const speaker = new speaker_({
-
-  });
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -277,6 +273,13 @@ module.exports = (electron, window_, zErr, zzz) => {
   }, Math.floor(1e3/fps));
   setInterval(() => {
     sendFrame();
+  }, Math.floor(1e3/fps));
+  setInterval(() => {
+    if (!paused && !checkIfRom()) {
+      //console.log(gameboy.getAudio().length);
+    } else {
+
+    }
   }, Math.floor(1e3/fps));
   setInterval(async () => {
     await saveSave();

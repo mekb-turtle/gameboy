@@ -5,14 +5,10 @@ if (require.main !== module) {
 }
 const electron = require("electron");
 if (typeof electron == "string") {
-  console.log("not running on electron, starting electron...");
+  console.error("not running on electron, starting electron...");
   var e = require("child_process").spawn(electron, ["."]);
-  e.stdout.on('data', data => {
-    process.stdout.write(data);
-  });
-  e.stderr.on('data', data => {
-    process.stderr.write(data);
-  });
+  e.stdout.on("data", data => process.stdout.write(data));
+  e.stderr.on("data", data => process.stderr.write(data));
   return;
 }
 console.log("Loading...");
