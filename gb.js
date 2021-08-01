@@ -2,7 +2,7 @@ if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`);
   return;
 }
-module.exports = (electron, window_, zErr, zzz) => {
+module.exports = (electron, window_, zErr, zzz, windowTitle) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -40,6 +40,12 @@ module.exports = (electron, window_, zErr, zzz) => {
     // gets private serverboy data like rom name
     return gameboy[Object.keys(gameboy).filter(e => e.startsWith("_"))[0]];
   };
+  const getRomName = () => {
+    if (checkIfRom(true)) return "";
+    var p = getPrivate()?.gameboy;
+    if (!p) return "";
+    return p?.name?`${p?.name}${p?.gameCode?`${p?.gameCode}`:""}`:"";
+  };
   const isAllowedFile = (file) => {
     // sees if a file starts with the correct rom hash header thing
     // to make sure they loaded a save / state for the correct rom
@@ -54,6 +60,12 @@ module.exports = (electron, window_, zErr, zzz) => {
   const validCartridgeTypes = [0x00,0x01,0x02,0x03,0x05,0x06,0x08,0x09,0x0B,
     0x0C,0x0D,0x0F,0x10,0x11,0x12,0x13,0x19,0x1A,0x1B,0x1C,0x1D,
     0x1E,0x1F,0x22,0xFD,0xFE,0xFF];
+  const updateTitle = () => {
+    var e = getRomName();
+    var t = `${windowTitle}${e?` - ${e}`:``}`;
+    window_.setTitle(t);
+  };
+  updateTitle();
   const openRom = async () => {
     await saveBeforeUnload();
     electron.dialog.showOpenDialog(window_, {
@@ -70,7 +82,7 @@ module.exports = (electron, window_, zErr, zzz) => {
       fs.readFile(res.filePaths[0]).then(fileData => {
         var cHash = () => {
           romHash = Buffer.concat([
-            Buffer.from("meGBhash"),
+            Buffer.from("romhash_"),
             crypto.createHash("sha256").update(rom).digest(),
             Buffer.from("_"),
           ]);
@@ -80,6 +92,7 @@ module.exports = (electron, window_, zErr, zzz) => {
         rom = fileData;
         cHash();
         rom = null;
+        updateTitle();
         if (gameboy) getPrivate()?.shutdownEmulation();
         // loads rom and save file from s argument, see below this function
         var z = (s) => {
@@ -98,6 +111,7 @@ module.exports = (electron, window_, zErr, zzz) => {
               if (s) save = s;
               rom = fileData;
               cHash();
+              updateTitle();
             } else {
               // kills gameboy if invalid rom or error loading the rom
               if (p) p.shutdownEmulation();
@@ -105,6 +119,7 @@ module.exports = (electron, window_, zErr, zzz) => {
               gameboy = null;
               rom = null;
               save = null;
+              updateTitle();
               zErr("Invalid ROM");
             }
           } catch (err) {
@@ -113,6 +128,7 @@ module.exports = (electron, window_, zErr, zzz) => {
             gameboy = null;
             rom = null;
             save = null;
+            updateTitle();
             zErr(err);
           }
         };
@@ -153,6 +169,7 @@ module.exports = (electron, window_, zErr, zzz) => {
     gameboy = null;
     rom = null;
     save = null;
+    updateTitle();
   };
   const rebootRom = async () => {
     if (checkIfRom(true)) return;
@@ -168,6 +185,7 @@ module.exports = (electron, window_, zErr, zzz) => {
     } catch (err) {
       zErr(err);
     }
+    updateTitle();
   };
   const exists = async path => {
     // only ever used once
@@ -269,6 +287,7 @@ module.exports = (electron, window_, zErr, zzz) => {
     // this is ran when the user closes the window
     // make sure to save the game
     await saveBeforeUnload();
+    updateTitle();
     // idk if app.quit is necessary
     electron.app.quit();
     // forcefully exit without calling unload otherwise infinite recursion
@@ -307,11 +326,7 @@ module.exports = (electron, window_, zErr, zzz) => {
     try {
       window_.webContents.send("rendergb", scr);
     } catch {}
-    var name = "";
-    try {
-      var p = getPrivate()?.gameboy;
-      name = p?.name?`${p?.name}${p?.gameCode?`${p?.gameCode}`:""}`:"";
-    } catch {}
+    var name = getRomName();
     if (saveDisplayTime > 0) --saveDisplayTime;
     try {
       window_.webContents.send("details", rom ? (

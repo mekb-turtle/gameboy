@@ -13,6 +13,7 @@ const path = require("path");
 await electron.app.whenReady();
 const calcWidth  = scaling => 160*scaling;
 const calcHeight = scaling => 144*scaling+25+16;
+const windowTitle = "meGB"; // title
 // should use dark theme?
 var theme = electron.nativeTheme.shouldUseDarkColors || electron.nativeTheme.shouldUseInvertedColorScheme || electron.nativeTheme.shouldUseHighContrastColors;
 const window_ = new electron.BrowserWindow({
@@ -20,7 +21,7 @@ const window_ = new electron.BrowserWindow({
   height:    calcHeight(2),
   minWidth:  calcWidth(1),
   minHeight: calcHeight(1),
-  title: "meGB", // title
+  title: windowTitle,
   webPreferences: {
     preload: path.join(__dirname, "preload.js")
   },
@@ -36,7 +37,7 @@ var menu = [];
 // set pause/resume button's label
 const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.label == "Pause" || e.label == "Resume").indexOf(true)].label = p ? "Resume" : "Pause"; zz(menu); };
 const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave }
-  = require("./gb.js")(electron, window_, zErr, zzz); // load gb.js with variables
+  = require("./gb.js")(electron, window_, zErr, zzz, windowTitle); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
