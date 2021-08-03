@@ -42,8 +42,8 @@ const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
     message: `meGB
-Made by mekb the turtle
-Uses serverboy package by Daniel Shumway`
+Made by mekb the turtle - https://github.com/mekb-turtle - mekb the turtle#4288
+Uses serverboy package by piglet-plays - https://gitlab.com/piglet-plays/serverboy.js`
   });
 };
 window_.webContents.send("theme", theme);
