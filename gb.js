@@ -1,12 +1,13 @@
 if (require.main === module) {
-  console.error(`You are not meant to call ${require("path").basename(__filename)} directly`);
-  return;
+  console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, zzz, windowTitle) => {
+module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText, setRPCStateText, setRPCIcon, setRPCStartTimestamp, updateRPC }, setOnIcon, exists) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
   const fps = 60 * 2;
+  // Date object when user loaded rom
+  var startTimestamp;
   var rom;
   var save;
   var romHash;
@@ -76,10 +77,10 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
         {name: "All", extensions: ["*"]},
       ],
       title: "Open ROM"
-    }).then(res => {
+    }).then(async res => {
       if (res.canceled) return;
       if (res.filePaths.length != 1) return;
-      fs.readFile(res.filePaths[0]).then(fileData => {
+      fs.readFile(res.filePaths[0]).then(async fileData => {
         var cHash = () => {
           romHash = Buffer.concat([
             Buffer.from("romhash_"),
@@ -92,6 +93,7 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
         rom = fileData;
         cHash();
         rom = null;
+        startTimestamp = null;
         updateTitle();
         if (gameboy) getPrivate()?.shutdownEmulation();
         // loads rom and save file from s argument, see below this function
@@ -112,12 +114,14 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
               rom = fileData;
               cHash();
               updateTitle();
+              startTimestamp = new Date();
             } else {
               // kills gameboy if invalid rom or error loading the rom
               if (p) p.shutdownEmulation();
               romHash = null;
               gameboy = null;
               rom = null;
+              startTimestamp = null;
               save = null;
               updateTitle();
               zErr("Invalid ROM");
@@ -133,7 +137,7 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
           }
         };
         saveFileName = res.filePaths[0]+".sav";
-        if (exists(saveFileName)) {
+        if (await exists(saveFileName)) {
           fs.readFile(saveFileName).then(saveFileData => {
             var d = isAllowedFile(saveFileData);
             if (d) {
@@ -169,6 +173,7 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
     gameboy = null;
     rom = null;
     save = null;
+    startTimestamp = null;
     updateTitle();
   };
   const rebootRom = async () => {
@@ -180,21 +185,13 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
     canSave = false;
     try {
       gameboy = new Gameboy();
+      startTimestamp = new Date();
       if (save) gameboy.loadRom(rom, save);
       else gameboy.loadRom(rom);
     } catch (err) {
       zErr(err);
     }
     updateTitle();
-  };
-  const exists = async path => {
-    // only ever used once
-    try {
-      await fs.stat(path);
-      return true;
-    } catch {
-      return false;
-    }
   };
   var autosave = true;
   const setAutosave = e => autosave = e;
@@ -287,6 +284,17 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
     // this is ran when the user closes the window
     // make sure to save the game
     await saveBeforeUnload();
+    // update some stuff
+    if (!checkIfRom(true)) {
+      // kills gameboy
+      getPrivate().shutdownEmulation();
+      canSave = false;
+      gameboy = null;
+      rom = null;
+      save = null;
+      startTimestamp = null;
+    }
+    updateRPC();
     updateTitle();
     // idk if app.quit is necessary
     electron.app.quit();
@@ -326,8 +334,19 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
     try {
       window_.webContents.send("rendergb", scr);
     } catch {}
+  };
+  const sendInfo = () => {
     var name = getRomName();
     if (saveDisplayTime > 0) --saveDisplayTime;
+    try {
+      setRPCDetailsText(rom ? (paused ? "Paused" : "Playing") : "");
+      setRPCStateText(rom ? name + "" : "");
+      setRPCIcon(rom);
+      setRPCStartTimestamp(startTimestamp);
+    } catch {}
+    try {
+      setOnIcon(rom);
+    } catch {}
     try {
       window_.webContents.send("details", rom ? (
         `${paused?`Paused`:`Playing`} ${name}${showFrameCount ? (" - "+getPrivate().frames.toString().padStart(6,0)) : ""
@@ -349,6 +368,9 @@ module.exports = (electron, window_, zErr, zzz, windowTitle) => {
     // interval for sendFrame
     sendFrame();
   }, Math.floor(1e3/fps));
+  setInterval(() => {
+    sendInfo();
+  }, Math.floor(100));
   setInterval(async () => {
     // interval for autosaving
     await saveSave();

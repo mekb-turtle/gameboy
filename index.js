@@ -10,12 +10,15 @@ if (typeof electron != "object") {
 }
 console.log("Loading...");
 const path = require("path");
+const fs = require("fs").promises;
 await electron.app.whenReady();
 const calcWidth  = scaling => 160*scaling;
 const calcHeight = scaling => 144*scaling+25+16;
 const windowTitle = "meGB"; // title
-// should use dark theme?
-var theme = electron.nativeTheme.shouldUseDarkColors || electron.nativeTheme.shouldUseInvertedColorScheme || electron.nativeTheme.shouldUseHighContrastColors;
+const configFile = "config.json";
+const gFile = f => path.join(__dirname, f);
+const gameboyIcon = electron.nativeImage.createFromPath(gFile("icons/icon_upscaled.png"));
+const gameboyOnIcon = electron.nativeImage.createFromPath(gFile("icons/icon_upscaled_on.png"));
 const window_ = new electron.BrowserWindow({
   width:     calcWidth(2),
   height:    calcHeight(2),
@@ -23,10 +26,53 @@ const window_ = new electron.BrowserWindow({
   minHeight: calcHeight(1),
   title: windowTitle,
   webPreferences: {
-    preload: path.join(__dirname, "preload.js")
+    preload: gFile("preload.js")
   },
 });
-window_.setBackgroundColor("#121216");
+const exists = async path => {
+  // only ever used once
+  try {
+    await fs.stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+};
+window_.setIcon(gameboyIcon);
+var config = {};
+if (await exists(configFile)) {
+  try {
+    var configString = await fs.readFile(configFile);
+    config = JSON.parse(configString);
+  } catch (e) {
+    console.error("failed reading config.json", e);
+  }
+}
+var rpc;
+var isRPC = false;
+const setRPCDetailsText = (t) => {
+  if (!isRPC) return;
+  rpc.setDetailsText(t);
+};
+const setRPCStateText = (t) => {
+  if (!isRPC) return;
+  rpc.setStateText(t);
+};
+const setRPCIcon = (t) => {
+  if (!isRPC) return;
+  rpc.setIcon(t);
+};
+const setRPCStartTimestamp = (t) => {
+  if (!isRPC) return;
+  rpc.setStartTimestamp(t);
+};
+const updateRPC = () => {
+  if (!isRPC) return;
+  rpc.updateActivity();
+};
+const setOnIcon = (t) => {
+  window_.setIcon(t ? gameboyOnIcon : gameboyIcon);
+}
 const zErr = (err) => {
   console.error(err); // logs error and alerts it too
   electron.dialog.showErrorBox(typeof err == "string" ? err : (err.name || "Error"), typeof err == "string" ? "" : err.stack || err.toString());
@@ -37,66 +83,80 @@ var menu = [];
 // set pause/resume button's label
 const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.label == "Pause" || e.label == "Resume").indexOf(true)].label = p ? "Resume" : "Pause"; zz(menu); };
 const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave }
-  = require("./gb.js")(electron, window_, zErr, zzz, windowTitle); // load gb.js with variables
+  = require("./gb.js")(electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText, setRPCStateText, setRPCIcon, setRPCStartTimestamp, updateRPC }, setOnIcon, exists); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
     message: `meGB
-Made by mekb the turtle - https://github.com/mekb-turtle - mekb the turtle#4288
+A Gameboy emulator written in Node.js by mekb the turtle - https://github.com/mekb-turtle - Discord: mekb the turtle#4288
 Uses serverboy package by piglet-plays - https://gitlab.com/piglet-plays/serverboy.js`
   });
 };
-window_.webContents.send("theme", theme);
+var isLight = false;
+if (config.theme != null) {
+  if (config.theme === "light")
+    isLight = true;
+  else if (config.theme !== "dark")
+    console.error("theme is not dark or light, defaulting to dark");
+}
+if (isLight) {
+  window_.webContents.send("theme", false);
+  window_.setBackgroundColor("#ffffff");
+} else {
+  window_.setBackgroundColor("#121216");
+}
 // menu variable, not constant because pause/resume label can change
 menu = [
-  {
-    label: "File", // file submenu
-    submenu: [
-      { label: "Open ROM file",       click: openRom,                     accelerator: "CmdOrCtrl+Shift+O" },
-      { type: "separator" },
-      { label: "Reboot ROM",          click: rebootRom,                   accelerator: "CmdOrCtrl+R" },
-      { label: "Close ROM",           click: closeRom,                    accelerator: "CmdOrCtrl+W" },
-      { type: "separator" },
-      { label: "Auto save",           click: m=>setAutosave(m.checked),   accelerator: "CmdOrCtrl+Shift+S", checked: true, type: "checkbox" },
-      { label: "Manual save file",    click: ()=>saveSave(true),          accelerator: "CmdOrCtrl+S" },
-      { type: "separator" },
-      { label: "Pause",               click: togglePaused,               accelerator: "Space" },
-      { label: "Frame advance",       click: frameAdvance,                accelerator: "\\" },
-      { type: "separator" },
-      { label: "Open state file",     click: openState,                   accelerator: "CmdOrCtrl+I" },
-      { label: "Save state file",     click: saveState,                   accelerator: "CmdOrCtrl+D" },
-    ]
-  },
-  {
-    label: "Size", // size submenu
-    submenu: [
-      // concat array with ... because i may want to add more to this submenu in the future
-      ...[1, 2, 4, 6].map((e, i) => ({
-        label: `${e}x`,
+  { label: config.labels.menu, submenu: [
+    { label: config.labels.pause,        click: togglePaused,              accelerator: config.keybinds.pause },
+    { label: config.labels.frameAdvance, click: frameAdvance,              accelerator: config.keybinds.frameAdvance },
+    { type: "separator" },
+    { label: config.labels.openRom,      click: openRom,                   accelerator: config.keybinds.openRom },
+    { label: config.labels.rebootRom,    click: rebootRom,                 accelerator: config.keybinds.rebootRom },
+    { label: config.labels.closeRom,     click: closeRom,                  accelerator: config.keybinds.closeRom },
+    { type: "separator" },
+    { label: config.labels.autosave,     click: m=>setAutosave(m.checked), accelerator: config.keybinds.autosave, checked: true, type: "checkbox" },
+    { label: config.labels.manualSave,   click: ()=>saveSave(true),        accelerator: config.keybinds.manualSave },
+    /*
+    { type: "separator" },
+    { label: config.labels.openState,    click: openState,                 accelerator: config.keybinds.openState },
+    { label: config.labels.saveState,    click: saveState,                 accelerator: config.keybinds.saveState },
+    */
+    { type: "separator" },
+    { label: config.labels.size, submenu: [
+      ...config.setSizes.map((e, i) => ({
+        label: config.labels.scale.replace(/\$S/g, e+"").replace(/\$I/g, i+"").replace(/\$O/g, i+1+""),
         click: () => {
           window_.setFullScreen(false);
           window_.unmaximize();
           window_.setSize(calcWidth(e), calcHeight(e));
         },
-        accelerator: "Shift+" + (i + 1)
+        accelerator: config.keybinds.scale.replace(/\$S/g, e+"").replace(/\$I/g, i+"").replace(/\$O/g, i+1+""),
       })),
-    ]
-  },
-  {
-    label: "Info", // misc stuff
-    submenu: [
-      { label: "Info", click: infoDialog, accelerator: "F1" },
-      { label: "Exit", click: () => { electron.app.quit(); } },
-    ]
-  },
+    ] },
+    { type: "separator" },
+    { label: config.labels.info, click: infoDialog, accelerator: config.keybinds.info },
+    { label: config.labels.exit, click: () => { electron.app.quit(); }, accelerator: config.keybinds.exit },
+  ] },
 ];
 zz(menu);
-window_.loadFile(path.join(__dirname, "index.html"));
+window_.loadFile(gFile("index.html"));
 // open dev tools for debugging
-//window_.webContents.openDevTools();
+// window_.webContents.openDevTools();
 // quit on window close, mac is confusing
 electron.app.on("window-all-closed", () => {
   if (process.platform != "darwin") electron.app.quit();
-})
+});
 console.log("Ready");
+if (typeof config.discord_rpc == "string") {
+  rpc = require("./rpc.js");
+  try {
+    await rpc.startRPC(config.discord_rpc);
+    isRPC = true;
+  } catch (err) {
+    console.error("failed loading rpc", err);
+  }
+} else if (config.discord_rpc != null) {
+  console.error("discord_rpc is not string, ignoring");
+}
 })().catch(err => { console.error(err); process.exit(); });

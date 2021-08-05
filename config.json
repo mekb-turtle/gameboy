@@ -1,0 +1,35 @@
+{
+  "discord_rpc": "872824485747777567",
+  "theme": "dark",
+  "labels": {
+    "menu": "meGB",
+    "size": "Size",
+    "openRom": "Open ROM file",
+    "rebootRom": "Reboot ROM",
+    "closeRom": "Close ROM",
+		"autosave": "Auto save",
+		"manualSave": "Manual save",
+		"pause": "Pause",
+		"frameAdvance": "Frame advance",
+		"openState": "Open state file",
+		"saveState": "Save state file",
+    "scale": "$Sx",
+    "info": "Info",
+    "exit": "Exit"
+  },
+  "keybinds": {
+    "openRom": "CmdOrCtrl+O",
+		"rebootRom": "CmdOrCtrl+R",
+		"closeRom": "CmdOrCtrl+W",
+		"autosave": "CmdOrCtrl+Shift+S",
+		"manualSave": "CmdOrCtrl+S",
+		"pause": "Space",
+		"frameAdvance": "\\",
+		"openState": "CmdOrCtrl+C",
+		"saveState": "CmdOrCtrl+X",
+    "scale": "Shift+$S",
+    "info": "F1",
+    "exit": null
+  },
+  "setSizes": [1, 2, 4, 6]
+}

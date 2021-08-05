@@ -21,7 +21,11 @@ window.addEventListener("DOMContentLoaded", () => {
   });
   window.onbeforeunload = e => {
     // save game before closing, check gb.js
-    ipcRenderer.invoke("quitgame");
+    try {
+      ipcRenderer.invoke("quitgame");
+    } catch (err) {
+      return true;
+    }
     return false;
   };
   var keybinds = { // all keybinds, uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
