@@ -1,5 +1,6 @@
 {
   "name": "megb",
+  "description": "A Gameboy emulator written in Node.js by mekb the turtle",
   "scripts": {
     "start": "electron ."
   },

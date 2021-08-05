@@ -12,7 +12,8 @@ window.addEventListener("DOMContentLoaded", () => {
     // set screen
     s = scr;
   });
-  ipcRenderer.on("theme", (e, theme) => {
+  ipcRenderer.invoke("sendstuff", true);
+  ipcRenderer.once("theme", (e, theme) => {
     // set theme (one time only)
     if (!theme) {
       var z = document.getElementById("s");
@@ -28,30 +29,8 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     return false;
   };
-  var keybinds = { // all keybinds, uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
-    "ArrowLeft": "LEFT",
-    "ArrowRight": "RIGHT",
-    "ArrowUp": "UP",
-    "ArrowDown": "DOWN",
-    "KeyA": "LEFT",
-    "KeyD": "RIGHT",
-    "KeyW": "UP",
-    "KeyS": "DOWN",
-    "KeyJ": "LEFT",
-    "KeyL": "RIGHT",
-    "KeyI": "UP",
-    "KeyK": "DOWN",
-    "Numpad5": "A",
-    "Numpad6": "B",
-    "KeyZ": "A",
-    "KeyX": "B",
-    "ShiftLeft": "SELECT",
-    "Quote": "SELECT",
-    "KeyP": "START",
-    "Enter": "START",
-    "Comma": "A",
-    "Period": "B",
-  }
+  var keybinds = {}; // all keybinds, uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
+  ipcRenderer.once("buttons", (e, { kb }) => keybinds = kb);
   var keysDown = {};
   ["keydown", "keyup"].forEach(ev => document.body.addEventListener(ev, e => {
     //if (e.shiftKey) return;

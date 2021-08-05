@@ -99,12 +99,11 @@ if (config.theme != null) {
   else if (config.theme !== "dark")
     console.error("theme is not dark or light, defaulting to dark");
 }
-if (isLight) {
-  window_.webContents.send("theme", false);
-  window_.setBackgroundColor("#ffffff");
-} else {
-  window_.setBackgroundColor("#121216");
-}
+window_.setBackgroundColor(isLight ? "#ffffff" : "#121216");
+electron.ipcMain.handle("sendstuff", (event) => {
+  window_.webContents.send("theme", !isLight);
+  window_.webContents.send("buttons", { kb: config.buttonKeybinds });
+});
 // menu variable, not constant because pause/resume label can change
 menu = [
   { label: config.labels.menu, submenu: [
@@ -154,7 +153,8 @@ if (typeof config.discord_rpc == "string") {
     await rpc.startRPC(config.discord_rpc);
     isRPC = true;
   } catch (err) {
-    console.error("failed loading rpc", err);
+    // console.error("failed loading rpc", err);
+    // really doesn't matter if rpc fails lol
   }
 } else if (config.discord_rpc != null) {
   console.error("discord_rpc is not string, ignoring");
