@@ -29,7 +29,7 @@ window.addEventListener("DOMContentLoaded", () => {
     }
     return false;
   };
-  var keybinds = {}; // all keybinds, uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
+  var keybinds = {}; // all keybinds
   ipcRenderer.once("buttons", (e, { kb }) => keybinds = kb);
   var keysDown = {};
   ["keydown", "keyup"].forEach(ev => document.body.addEventListener(ev, e => {

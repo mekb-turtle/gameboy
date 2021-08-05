@@ -43,7 +43,11 @@ var config = {};
 if (await exists(configFile)) {
   try {
     var configString = await fs.readFile(configFile);
-    config = JSON.parse(configString);
+    try {
+      config = JSON.parse(configString.toString().replace(/(\/\/[^\n\r]+)|(\/\*.+\*\/)/gs,""));
+    } catch (e) {
+      console.error("failed parsing config.json", e);
+    }
   } catch (e) {
     console.error("failed reading config.json", e);
   }

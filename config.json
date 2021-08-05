@@ -1,6 +1,8 @@
 {
-  "discord_rpc": "872824485747777567",
-  "theme": "dark",
+  "discord_rpc": "872824485747777567", // discord rpc is supported
+  "discord_rpc_gameboy_icon": "gameboy", // icon to show in rpc when no rom is loaded
+  "discord_rpc_gameboy_running_icon": "gameboy_on", // icon to show in rpc when a rom is loaded
+  "theme": "dark", // currently only dark and light
   "labels": {
     "menu": "meGB",
     "size": "Size",
@@ -13,7 +15,7 @@
 		"frameAdvance": "Frame advance",
 		"openState": "Open state file",
 		"saveState": "Save state file",
-    "scale": "$Sx",
+    "scale": "$Sx", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
     "info": "Info",
     "exit": "Exit"
   },
@@ -27,12 +29,12 @@
 		"frameAdvance": "\\",
 		"openState": "CmdOrCtrl+C",
 		"saveState": "CmdOrCtrl+X",
-    "scale": "Shift+$S",
+    "scale": "Shift+$O", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
     "info": "F1",
     "exit": null
   },
-  "setSizes": [1, 2, 4, 6],
-  "buttonKeybinds": {
+  "setSizes": [1, 2, 4, 6], // size submenu
+  "buttonKeybinds": { // uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
     "ArrowLeft": "LEFT",
     "ArrowRight": "RIGHT",
     "ArrowUp": "UP",
