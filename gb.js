@@ -339,8 +339,8 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText
     var name = getRomName();
     if (saveDisplayTime > 0) --saveDisplayTime;
     try {
-      setRPCDetailsText(rom ? (paused ? "Paused" : "Playing") : "");
-      setRPCStateText(rom ? name + "" : "");
+      setRPCDetailsText(rom ? name + "" : "Gameboy Emulator");
+      setRPCStateText(rom ? (paused ? "Paused" : "") : "");
       setRPCIcon(rom);
       setRPCStartTimestamp(startTimestamp);
     } catch {}
