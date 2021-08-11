@@ -1,7 +1,23 @@
 {
-  "discord_rpc": "872824485747777567", // discord rpc is supported
-  "discord_rpc_gameboy_icon": "gameboy", // icon to show in rpc when no rom is loaded
-  "discord_rpc_gameboy_running_icon": "gameboy_on", // icon to show in rpc when a rom is loaded
+  "discord_rpc": { // discord rpc is supported
+    "id": "872824485747777567", // client id
+    "off_icon": "gameboy",
+    "on_icon": "gameboy_on",
+    "icon_label": "meGB",
+    "small_paused_icon": "pause",
+    "small_playing_icon": "play",
+    "small_paused_icon_label": "Paused",
+    "small_playing_icon_label": "Playing",
+    "details_text": "Gameboy Emulator"
+  },
+  "textbar": {
+    "show_frame_count": false, // show how many frames has gameboy been running for
+    "saved_text": " - Saved",
+    "saving_text": " - Saving",
+    "frame_count_text": " - ",
+    "paused_text": "Paused ",
+    "playing_text": "Playing "
+  },
   "theme": "dark", // currently only dark and light
   "labels": {
     "menu": "meGB",

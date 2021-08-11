@@ -54,21 +54,8 @@ if (await exists(configFile)) {
 }
 var rpc;
 var isRPC = false;
-const setRPCDetailsText = (t) => {
-  if (!isRPC) return;
-  rpc.setDetailsText(t);
-};
-const setRPCStateText = (t) => {
-  if (!isRPC) return;
-  rpc.setStateText(t);
-};
-const setRPCIcon = (t) => {
-  if (!isRPC) return;
-  rpc.setIcon(t);
-};
-const setRPCStartTimestamp = (t) => {
-  if (!isRPC) return;
-  rpc.setStartTimestamp(t);
+const setRPC = (t) => {
+  rpc.set(t)
 };
 const updateRPC = () => {
   if (!isRPC) return;
@@ -87,7 +74,7 @@ var menu = [];
 // set pause/resume button's label
 const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.label == "Pause" || e.label == "Resume").indexOf(true)].label = p ? "Resume" : "Pause"; zz(menu); };
 const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave }
-  = require("./gb.js")(electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText, setRPCStateText, setRPCIcon, setRPCStartTimestamp, updateRPC }, setOnIcon, exists); // load gb.js with variables
+  = require("./gb.js")(electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, config.textbar ); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
@@ -151,16 +138,21 @@ electron.app.on("window-all-closed", () => {
   if (process.platform != "darwin") electron.app.quit();
 });
 console.log("Ready");
-if (typeof config.discord_rpc == "string") {
-  rpc = require("./rpc.js");
-  try {
-    await rpc.startRPC(config.discord_rpc);
-    isRPC = true;
-  } catch (err) {
-    // console.error("failed loading rpc", err);
-    // really doesn't matter if rpc fails lol
+if (typeof config.discord_rpc == "object" && !Array.isArray(config.discord_rpc)) {
+  if (typeof config.discord_rpc.id == "string") {
+    rpc = require("./rpc.js");
+    var i = config.discord_rpc.id;
+    rpc.set(config.discord_rpc);
+    if (i) {
+      try {
+        await rpc.startRPC(i);
+        isRPC = true;
+      } catch (err) {}
+    }
+  } else if (config.discord_rpc.id != null) {
+    console.error("discord_rpc.id is not string, ignoring");
   }
 } else if (config.discord_rpc != null) {
-  console.error("discord_rpc is not string, ignoring");
+  console.error("discord_rpc is not object, ignoring");
 }
 })().catch(err => { console.error(err); process.exit(); });

@@ -1,7 +1,7 @@
 if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText, setRPCStateText, setRPCIcon, setRPCStartTimestamp, updateRPC }, setOnIcon, exists) => {
+module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, textbar) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -325,8 +325,6 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText
   };
   // shows Saved text because saving is too quick for the user to see
   var saveDisplayTime = 0;
-  // show how many frames has gameboy been running for
-  const showFrameCount = false;
   // send the screen data and details to the preload.js
   const sendFrame = () => {
     var scr;
@@ -339,18 +337,21 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPCDetailsText
     var name = getRomName();
     if (saveDisplayTime > 0) --saveDisplayTime;
     try {
-      setRPCDetailsText(rom ? name + "" : "Gameboy Emulator");
-      setRPCStateText(rom ? (paused ? "Paused" : "") : "");
-      setRPCIcon(rom);
-      setRPCStartTimestamp(startTimestamp);
+      setRPC({
+        start_timestamp: startTimestamp,
+        rom_name: rom ? name + "" : "",
+        is_rom: !!rom,
+        paused: paused,
+      });
+      updateRPC();
     } catch {}
     try {
       setOnIcon(rom);
     } catch {}
     try {
       window_.webContents.send("details", rom ? (
-        `${paused?`Paused`:`Playing`} ${name}${showFrameCount ? (" - "+getPrivate().frames.toString().padStart(6,0)) : ""
-          }${saving?" - Saving":(saveDisplayTime>0?" - Saved":"")}`
+        `${paused?textbar.paused_text:textbar.playing_text}${name}${textbar.show_frame_count ? (textbar.frame_count_text+getPrivate().frames.toString().padStart(6,0)) : ""
+          }${saving?textbar.saving_text:(saveDisplayTime>0?textbar.saved_text:"")}`
       ) : "");
     } catch {}
   };
