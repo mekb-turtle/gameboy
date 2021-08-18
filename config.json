@@ -4,8 +4,8 @@
     "enabled": true,
     "encoding": "8bitInt",
     "channels": 4,
-    "sample_rate": 44100,
-    "flushing_time": 1000,
+    "sample_rate": 64000,
+    "flushing_time": 1000
   },
   "discord_rpc": { // discord rpc is supported
     "id": "872824485747777567", // client id

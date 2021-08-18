@@ -1,7 +1,7 @@
 if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, textbar, callQuit) => {
+module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, textbar, callQuit) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -294,6 +294,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
       save = null;
       startTimestamp = null;
     }
+    endRPC();
     updateRPC();
     updateTitle();
     callQuit();

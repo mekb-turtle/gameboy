@@ -4,9 +4,12 @@ if (require.main === module) {
 const RPC = require("discord-rpc");
 const client = new RPC.Client({ transport: "ipc" });
 var data = {};
+var ended = false;
 module.exports = {
   async updateActivity() {
-    return await client.setActivity({
+    return await client.setActivity(ended ? {
+      instance: false,
+    } : {
       details: data.rom_name || data.details_text || undefined,
       state: undefined,
       largeImageKey: (data.is_rom ? data.on_icon : data.off_icon) || undefined,
@@ -16,6 +19,9 @@ module.exports = {
       startTimestamp: data.start_timestamp || undefined,
       instance: false,
     });
+  },
+  end() {
+    ended = true;
   },
   async startRPC() {
     await client.login({ clientId: data.id });

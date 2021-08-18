@@ -5,7 +5,7 @@ window.addEventListener("DOMContentLoaded", () => {
   if (d) return;
   d = true;
   const pcmPlayer = require("pcm-player");
-  const player;
+  var player;
   ipcRenderer.once("audio", (e, d)=>{
     if (!d.enabled) return;
     player = new pcmPlayer({
