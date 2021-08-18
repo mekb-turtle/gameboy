@@ -8,6 +8,7 @@
   "dependencies": {
     "clone-buffer": "^1.0.0",
     "discord-rpc": "^4.0.1",
+    "pcm-player": "^0.0.11",
     "serverboy": "^0.0.7"
   },
   "devDependencies": {

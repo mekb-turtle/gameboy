@@ -1,4 +1,12 @@
 {
+  "theme": "dark", // currently only dark and light
+  "audio": {
+    "enabled": true,
+    "encoding": "8bitInt",
+    "channels": 4,
+    "sample_rate": 44100,
+    "flushing_time": 1000,
+  },
   "discord_rpc": { // discord rpc is supported
     "id": "872824485747777567", // client id
     "off_icon": "gameboy",
@@ -18,39 +26,42 @@
     "paused_text": "Paused ",
     "playing_text": "Playing "
   },
-  "theme": "dark", // currently only dark and light
   "labels": {
     "menu": "meGB",
-    "size": "Size",
-    "openRom": "Open ROM file",
-    "rebootRom": "Reboot ROM",
-    "closeRom": "Close ROM",
-		"autosave": "Auto save",
-		"manualSave": "Manual save",
+    "open_rom": "Open ROM file",
+    "reboot_rom": "Reboot ROM",
+    "close_rom": "Close ROM",
+		"auto_save": "Auto save",
+		"manual_save": "Manual save",
 		"pause": "Pause",
-		"frameAdvance": "Frame advance",
-		"openState": "Open state file",
-		"saveState": "Save state file",
+		"resume": "Resume",
+		"frame_advance": "Frame advance",
+		"open_state": "Open state file",
+		"save_state": "Save state file",
+    "scale_sub": "Size",
     "scale": "$Sx", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
+		"mute": "Mute",
+		"unmute": "Unmute",
     "info": "Info",
     "exit": "Exit"
   },
   "keybinds": {
-    "openRom": "CmdOrCtrl+O",
-		"rebootRom": "CmdOrCtrl+R",
-		"closeRom": "CmdOrCtrl+W",
-		"autosave": "CmdOrCtrl+Shift+S",
-		"manualSave": "CmdOrCtrl+S",
-		"pause": "Space",
-		"frameAdvance": "\\",
-		"openState": "CmdOrCtrl+C",
-		"saveState": "CmdOrCtrl+X",
+    "open_rom": "CmdOrCtrl+O",
+		"reboot_rom": "CmdOrCtrl+R",
+		"close_rom": "CmdOrCtrl+W",
+		"auto_save": "CmdOrCtrl+Shift+S",
+		"manual_save": "CmdOrCtrl+S",
+		"toggle_pause": "Space",
+		"frame_advance": "\\",
+		"open_state": "CmdOrCtrl+C",
+		"save_state": "CmdOrCtrl+X",
     "scale": "Shift+$O", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
+		"toggle_mute": "CmdOrCtrl+M",
     "info": "F1",
     "exit": null
   },
-  "setSizes": [1, 2, 4, 6], // size submenu
-  "buttonKeybinds": { // uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
+  "set_sizes": [1, 2, 4, 6], // size submenu
+  "button_keybinds": { // uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
     "ArrowLeft": "LEFT",
     "ArrowRight": "RIGHT",
     "ArrowUp": "UP",

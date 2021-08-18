@@ -1,7 +1,7 @@
 if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, textbar) => {
+module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, textbar, callQuit) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -296,11 +296,7 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC
     }
     updateRPC();
     updateTitle();
-    // idk if app.quit is necessary
-    electron.app.quit();
-    // forcefully exit without calling unload otherwise infinite recursion
-    // and user won't be able to exit
-    process.exit();
+    callQuit();
   });
   electron.ipcMain.handle("buttonpress", (event, o) => {
     if (!o.button) return;
@@ -331,6 +327,14 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC
     if (rom) scr = gameboy.getScreen();
     try {
       window_.webContents.send("rendergb", scr);
+    } catch {}
+  };
+  const sendAudio = () => {
+    try {
+      if (rom) {
+        var audio = gameboy.getAudio();
+        window_.webContents.send("audio", audio);
+      }
     } catch {}
   };
   const sendInfo = () => {
@@ -364,6 +368,7 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC
     canFrameAdvance = true;
     if (paused) return;
     frame();
+    sendAudio();
   }, Math.floor(1e3/fps));
   setInterval(() => {
     // interval for sendFrame
@@ -381,6 +386,12 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC
     paused = !paused;
     zzz(paused);
   };
+  var vol = 1;
+  const toggleMute = () => {
+    window_.webContents.send("volume", +vol<=0);
+    zzy();
+    return !vol;
+  };
   const frameAdvance = () => {
     if (!paused) {
       // pause if not paused
@@ -394,8 +405,9 @@ module.exports = (electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC
     zzz(paused);
     if (checkIfRom(true)) return;
     frame();
+    sendAudio();
     sendFrame();
     canFrameAdvance = false;
   };
-  return { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave };
+  return { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute };
 };

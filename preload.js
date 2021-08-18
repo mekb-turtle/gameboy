@@ -1,9 +1,35 @@
 const { ipcRenderer } = require("electron");
+var vol = 1;
+var d = false;
 window.addEventListener("DOMContentLoaded", () => {
+  if (d) return;
+  d = true;
+  const pcmPlayer = require("pcm-player");
+  const player;
+  ipcRenderer.once("audio", (e, d)=>{
+    if (!d.enabled) return;
+    player = new pcmPlayer({
+      encoding: d.encoding,
+      channels: d.channels,
+      sampleRate: d.sample_rate,
+      flushingTime: d.flushing_time,
+    });
+    player.volume(vol);
+  });
   var c = document.getElementById("canvas");
   var d = document.getElementById("details");
   var g = c.getContext("2d");
   var s;
+  ipcRenderer.on("volume", (e, v) => {
+    vol = v;
+    if (player)
+      player.volume(v);
+  });
+  ipcRenderer.on("audio", (e, v) => {
+    if (!player) return;
+    if (vol > 0)
+      player.feed(v);
+  });
   ipcRenderer.on("details", (e, text) => {
     // set bottom bar text
     d.innerText = text;
@@ -17,12 +43,13 @@ window.addEventListener("DOMContentLoaded", () => {
     // set theme (one time only)
     if (!theme) {
       var z = document.getElementById("s");
-      z.innerText = z.innerText.replace(/121216/g,"EEEEEEREPLACE").replace(/ffffff/g,"121216").replace(/EEEEEEREPLACE/g,"ffffff");
+      z.innerText = z.innerText.replace(/121216/g,"themereplacer").replace(/ffffff/g,"121216").replace(/themereplacer/g,"ffffff");
     }
   });
   window.onbeforeunload = e => {
     // save game before closing, check gb.js
     try {
+      player.destroy();
       ipcRenderer.invoke("quitgame");
     } catch (err) {
       return true;
@@ -30,7 +57,7 @@ window.addEventListener("DOMContentLoaded", () => {
     return false;
   };
   var keybinds = {}; // all keybinds
-  ipcRenderer.once("buttons", (e, { kb }) => keybinds = kb);
+  ipcRenderer.once("buttons", (e, kb) => keybinds = kb);
   var keysDown = {};
   ["keydown", "keyup"].forEach(ev => document.body.addEventListener(ev, e => {
     //if (e.shiftKey) return;

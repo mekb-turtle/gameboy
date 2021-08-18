@@ -25,10 +25,16 @@ const window_ = new electron.BrowserWindow({
   minWidth:  calcWidth(1),
   minHeight: calcHeight(1),
   title: windowTitle,
+  devTools: true,
   webPreferences: {
     preload: gFile("preload.js")
   },
 });
+const callQuit = () => {
+  window_.destroy();
+  electron.app.quit();
+  process.exit();
+};
 const exists = async path => {
   // only ever used once
   try {
@@ -52,6 +58,8 @@ if (await exists(configFile)) {
     console.error("failed reading config.json", e);
   }
 }
+window_.webContents.send(audio, config.audio);
+window_.webContents.openDevTools();
 var rpc;
 var isRPC = false;
 const setRPC = (t) => {
@@ -72,9 +80,12 @@ const zErr = (err) => {
 const zz = m => electron.Menu.setApplicationMenu(electron.Menu.buildFromTemplate(m));
 var menu = [];
 // set pause/resume button's label
-const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.label == "Pause" || e.label == "Resume").indexOf(true)].label = p ? "Resume" : "Pause"; zz(menu); };
-const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave }
-  = require("./gb.js")(electron, window_, zErr, zzz, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, config.textbar ); // load gb.js with variables
+const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").indexOf(true)].label = p ? config.labels.resume : config.labels.pause; zz(menu); };
+// set muted text
+const zzy = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
+// require gb
+const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute }
+  = require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC }, setOnIcon, exists, config.textbar, callQuit ); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
@@ -93,28 +104,28 @@ if (config.theme != null) {
 window_.setBackgroundColor(isLight ? "#ffffff" : "#121216");
 electron.ipcMain.handle("sendstuff", (event) => {
   window_.webContents.send("theme", !isLight);
-  window_.webContents.send("buttons", { kb: config.buttonKeybinds });
+  window_.webContents.send("buttons", config.button_keybinds);
 });
 // menu variable, not constant because pause/resume label can change
 menu = [
   { label: config.labels.menu, submenu: [
-    { label: config.labels.pause,        click: togglePaused,              accelerator: config.keybinds.pause },
-    { label: config.labels.frameAdvance, click: frameAdvance,              accelerator: config.keybinds.frameAdvance },
+    { label: config.labels.pause,         click: togglePaused,                  accelerator: config.keybinds.toggle_pause, id: "pause" },
+    { label: config.labels.frame_advance, click: frameAdvance,                  accelerator: config.keybinds.frame_advance },
     { type: "separator" },
-    { label: config.labels.openRom,      click: openRom,                   accelerator: config.keybinds.openRom },
-    { label: config.labels.rebootRom,    click: rebootRom,                 accelerator: config.keybinds.rebootRom },
-    { label: config.labels.closeRom,     click: closeRom,                  accelerator: config.keybinds.closeRom },
+    { label: config.labels.open_rom,      click: openRom,                       accelerator: config.keybinds.open_rom },
+    { label: config.labels.reboot_rom,    click: rebootRom,                     accelerator: config.keybinds.reboot_rom },
+    { label: config.labels.close_rom,     click: closeRom,                      accelerator: config.keybinds.close_rom },
     { type: "separator" },
-    { label: config.labels.autosave,     click: m=>setAutosave(m.checked), accelerator: config.keybinds.autosave, checked: true, type: "checkbox" },
-    { label: config.labels.manualSave,   click: ()=>saveSave(true),        accelerator: config.keybinds.manualSave },
+    { label: config.labels.auto_save,     click: m=>setAutosave(m.checked),     accelerator: config.keybinds.auto_save, checked: true, type: "checkbox" },
+    { label: config.labels.manual_save,   click: ()=>saveSave(true),            accelerator: config.keybinds.manual_save },
     /*
     { type: "separator" },
-    { label: config.labels.openState,    click: openState,                 accelerator: config.keybinds.openState },
-    { label: config.labels.saveState,    click: saveState,                 accelerator: config.keybinds.saveState },
+    { label: config.labels.open_state,    click: openState,                     accelerator: config.keybinds.open_state },
+    { label: config.labels.save_state,    click: saveState,                     accelerator: config.keybinds.save_state },v
     */
     { type: "separator" },
-    { label: config.labels.size, submenu: [
-      ...config.setSizes.map((e, i) => ({
+    { label: config.labels.scale_sub, submenu: [
+      ...config.set_sizes.map((e, i) => ({
         label: config.labels.scale.replace(/\$S/g, e+"").replace(/\$I/g, i+"").replace(/\$O/g, i+1+""),
         click: () => {
           window_.setFullScreen(false);
@@ -125,8 +136,10 @@ menu = [
       })),
     ] },
     { type: "separator" },
-    { label: config.labels.info, click: infoDialog, accelerator: config.keybinds.info },
-    { label: config.labels.exit, click: () => { electron.app.quit(); }, accelerator: config.keybinds.exit },
+    { label: config.labels.mute,         click: toggleMute,                     accelerator: config.keybinds.toggle_mute, id: "mute" },
+    { type: "separator" },
+    { label: config.labels.info,         click: infoDialog,                     accelerator: config.keybinds.info },
+    { label: config.labels.exit,         click: () => { electron.app.quit(); }, accelerator: config.keybinds.exit },
   ] },
 ];
 zz(menu);
@@ -135,7 +148,8 @@ window_.loadFile(gFile("index.html"));
 // window_.webContents.openDevTools();
 // quit on window close, mac is confusing
 electron.app.on("window-all-closed", () => {
-  if (process.platform != "darwin") electron.app.quit();
+  electron.app.quit();
+  process.exit();
 });
 console.log("Ready");
 if (typeof config.discord_rpc == "object" && !Array.isArray(config.discord_rpc)) {
