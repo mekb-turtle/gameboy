@@ -6,13 +6,21 @@ window.addEventListener("DOMContentLoaded", () => {
   d = true;
   const pcmPlayer = require("pcm-player");
   var player;
-  ipcRenderer.once("audio", (e, d)=>{
-    if (!d.enabled) return;
+  var lastD;
+  ipcRenderer.once("audioinit", (e, d)=>{
+    if (lastD === JSON.stringify(d)) return;
+    lastD = JSON.stringify(d);
+    console.log(d);
+    if (!d) {
+      if (player) player.destroy();
+      player = null;
+      return;
+    }
     player = new pcmPlayer({
       encoding: d.encoding,
       channels: d.channels,
-      sampleRate: d.sample_rate,
-      flushingTime: d.flushing_time,
+      sampleRate: d.sampleRate,
+      flushingTime: d.flushingTime,
     });
     player.volume(vol);
   });
@@ -49,7 +57,7 @@ window.addEventListener("DOMContentLoaded", () => {
   window.onbeforeunload = e => {
     // save game before closing, check gb.js
     try {
-      player.destroy();
+      if (player) player.destroy();
       ipcRenderer.invoke("quitgame");
     } catch (err) {
       return true;

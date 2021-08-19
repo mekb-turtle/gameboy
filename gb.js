@@ -1,7 +1,7 @@
 if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, textbar, callQuit) => {
+module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, { textbar, audio: isAudio }, callQuit) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -39,6 +39,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
   };
   const getPrivate = () => {
     // gets private serverboy data like rom name
+    if (!gameboy) return null;
     return gameboy[Object.keys(gameboy).filter(e => e.startsWith("_"))[0]];
   };
   const getRomName = () => {
@@ -115,6 +116,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
               cHash();
               updateTitle();
               startTimestamp = new Date();
+              initAudio();
             } else {
               // kills gameboy if invalid rom or error loading the rom
               if (p) p.shutdownEmulation();
@@ -124,6 +126,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
               startTimestamp = null;
               save = null;
               updateTitle();
+              initAudio();
               zErr("Invalid ROM");
             }
           } catch (err) {
@@ -134,6 +137,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
             save = null;
             updateTitle();
             zErr(err);
+            initAudio();
           }
         };
         saveFileName = res.filePaths[0]+".sav";
@@ -175,6 +179,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     save = null;
     startTimestamp = null;
     updateTitle();
+    initAudio();
   };
   const rebootRom = async () => {
     if (checkIfRom(true)) return;
@@ -188,6 +193,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
       startTimestamp = new Date();
       if (save) gameboy.loadRom(rom, save);
       else gameboy.loadRom(rom);
+      initAudio();
     } catch (err) {
       zErr(err);
     }
@@ -294,6 +300,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
       save = null;
       startTimestamp = null;
     }
+    initAudio();
     endRPC();
     updateRPC();
     updateTitle();
@@ -329,6 +336,23 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     try {
       window_.webContents.send("rendergb", scr);
     } catch {}
+  };
+  const initAudio = () => {
+    try {
+      if (!isAudio || !gameboy || !rom) {
+        window_.webContents.send("audioinit", null);
+      } else {
+        var p = getPrivate();
+        window_.webContents.send("audioinit", {
+          encoding: "8bitInt",
+          channels: 2,
+          sampleRate: p.gameboy.clocksPerSecond / p.gameboy.audioResamplerFirstPassFactor,
+          flushingTime: 1000,
+        });
+      }
+    } catch (err) {
+      zErr(err);
+    }
   };
   const sendAudio = () => {
     try {
@@ -389,9 +413,11 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
   };
   var vol = 1;
   const toggleMute = () => {
-    window_.webContents.send("volume", +vol<=0);
-    zzy();
-    return !vol;
+    vol = +vol<=0;
+    window_.webContents.send("volume", vol);
+    initAudio();
+    zzy(!vol);
+    return vol;
   };
   const frameAdvance = () => {
     if (!paused) {

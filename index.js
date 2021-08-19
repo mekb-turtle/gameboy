@@ -58,7 +58,6 @@ if (await exists(configFile)) {
     console.error("failed reading config.json", e);
   }
 }
-window_.webContents.send("audio", config.audio);
 window_.webContents.openDevTools();
 var rpc;
 var isRPC = false;
@@ -88,10 +87,10 @@ var menu = [];
 // set pause/resume button's label
 const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").indexOf(true)].label = p ? config.labels.resume : config.labels.pause; zz(menu); };
 // set muted text
-const zzy = (p) => { if (config.audio.enabled) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
+const zzy = (p) => { if (config.audio) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
 // require gb
 const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute }
-  = require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, config.textbar, callQuit ); // load gb.js with variables
+  = require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, config, callQuit ); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
@@ -141,9 +140,9 @@ menu = [
         accelerator: config.keybinds.scale.replace(/\$S/g, e+"").replace(/\$I/g, i+"").replace(/\$O/g, i+1+""),
       })),
     ] },
-    ...config.audio.enabled?[
+    ...config.audio?[
       { type: "separator" },
-      { label: config.labels.mute,         click: toggleMute,                     accelerator: config.keybinds.toggle_mute, id: "mute" },
+      { label: config.labels.mute,       click: toggleMute,                     accelerator: config.keybinds.toggle_mute, id: "mute" },
     ]:[],
     { type: "separator" },
     { label: config.labels.info,         click: infoDialog,                     accelerator: config.keybinds.info },

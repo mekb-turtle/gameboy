@@ -1,12 +1,6 @@
 {
   "theme": "dark", // currently only dark and light
-  "audio": {
-    "enabled": true,
-    "encoding": "8bitInt",
-    "channels": 4,
-    "sample_rate": 64000,
-    "flushing_time": 1000
-  },
+  "audio": true,
   "discord_rpc": { // discord rpc is supported
     "id": "872824485747777567", // client id
     "off_icon": "gameboy",
