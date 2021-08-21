@@ -2,6 +2,7 @@
   "theme": "dark", // currently only dark and light
   "audio": true,
   "discord_rpc": { // discord rpc is supported
+    "enabled": false, // temporarily disable while developing to stop rate limits
     "id": "872824485747777567", // client id
     "off_icon": "gameboy",
     "on_icon": "gameboy_on",

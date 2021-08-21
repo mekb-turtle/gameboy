@@ -342,12 +342,13 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
       if (!isAudio || !gameboy || !rom) {
         window_.webContents.send("audioinit", null);
       } else {
-        var p = getPrivate();
+        var p = getPrivate().gameboy;
+        // send audio info like codec and sample rate
         window_.webContents.send("audioinit", {
-          encoding: "8bitInt",
+          inputCodec: "Float32",
           channels: 2,
-          sampleRate: p.gameboy.clocksPerSecond / p.gameboy.audioResamplerFirstPassFactor,
-          flushingTime: 1000,
+          sampleRate: p.clocksPerSecond / p.audioResamplerFirstPassFactor,
+          flushTime: 1000 / 60,
         });
       }
     } catch (err) {
@@ -411,12 +412,13 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     paused = !paused;
     zzz(paused);
   };
+  var b = false;
   var vol = 1;
   const toggleMute = () => {
     vol = +vol<=0;
     window_.webContents.send("volume", vol);
     initAudio();
-    zzy(!vol);
+    if (b) zzy(!vol);
     return vol;
   };
   const frameAdvance = () => {
@@ -436,5 +438,13 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     sendFrame();
     canFrameAdvance = false;
   };
-  return { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute };
+  // remove next line when audio works without glitches
+  toggleMute();
+  // 
+  const callReady = () => {
+    zzz(paused);
+    zzy(!vol);
+    b = true;
+  }
+  return { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady };
 };

@@ -10,14 +10,13 @@ window.addEventListener("DOMContentLoaded", () => {
   ipcRenderer.once("audioinit", (e, d)=>{
     if (lastD === JSON.stringify(d)) return;
     lastD = JSON.stringify(d);
-    console.log(d);
     if (!d) {
       if (player) player.destroy();
       player = null;
       return;
     }
     player = new pcmPlayer({
-      encoding: d.encoding,
+      inputCodec: d.inputCodec,
       channels: d.channels,
       sampleRate: d.sampleRate,
       flushingTime: d.flushingTime,

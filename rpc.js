@@ -7,10 +7,13 @@ var data = {};
 var ended = false;
 module.exports = {
   async updateActivity() {
+    var d = data.rom_name || data.details_text || undefined;
+    if (typeof d == "string")
+      while (d.length < 2) d += "\u200b"; // min length is two
     return await client.setActivity(ended ? {
       instance: false,
     } : {
-      details: data.rom_name || data.details_text || undefined,
+      details: d,
       state: undefined,
       largeImageKey: (data.is_rom ? data.on_icon : data.off_icon) || undefined,
       largeImageText: data.icon_label || undefined,

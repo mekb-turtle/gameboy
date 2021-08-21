@@ -4,5 +4,5 @@ A Gameboy emulator written in Node.js
 Customizable `config.json`, able to change menu button labels, keybinds, theme, and more.\
 Has Discord RPC to show to anyone that views your Discord profile.
 
-Audio is work in progress, for now please mute it unless you want to kill your ears\
-To-do: Save states, Open last ROM
+Audio almost works, sounds pretty glitchy so muted by default.\
+To-do: Save states, Open last ROM.

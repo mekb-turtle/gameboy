@@ -30,6 +30,8 @@ const window_ = new electron.BrowserWindow({
     preload: gFile("preload.js")
   },
 });
+// don't show window until ready
+window_.hide();
 const callQuit = () => {
   window_.destroy();
   electron.app.quit();
@@ -89,7 +91,7 @@ const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").i
 // set muted text
 const zzy = (p) => { if (config.audio) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
 // require gb
-const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute }
+const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady }
   = require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, config, callQuit ); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
@@ -150,6 +152,7 @@ menu = [
   ] },
 ];
 zz(menu);
+callReady();
 window_.loadFile(gFile("index.html"));
 // open dev tools for debugging
 // window_.webContents.openDevTools();
@@ -159,21 +162,29 @@ electron.app.on("window-all-closed", () => {
   process.exit();
 });
 console.log("Ready");
+// security stuff
+electron.app.on("web-contents-created", (e, contents) => {
+  contents.on("will-navigate", (e, url) => {
+    e.preventDefault();
+  });
+  contents.setWindowOpenHandler(({ url }) => {
+    return { action: "deny" };
+  });
+});
+window_.show();
 if (typeof config.discord_rpc == "object" && !Array.isArray(config.discord_rpc)) {
-  if (typeof config.discord_rpc.id == "string") {
-    rpc = require("./rpc.js");
-    var i = config.discord_rpc.id;
-    rpc.set(config.discord_rpc);
-    if (i) {
-      try {
-        await rpc.startRPC(i);
-        isRPC = true;
-      } catch (err) {}
+  if (config.discord_rpc.enabled === true) {
+    if (typeof config.discord_rpc.id == "string") {
+      rpc = require("./rpc.js");
+      var i = config.discord_rpc.id;
+      rpc.set(config.discord_rpc);
+      if (i) {
+        try {
+          await rpc.startRPC(i);
+          isRPC = true;
+        } catch (err) {}
+      }
     }
-  } else if (config.discord_rpc.id != null) {
-    console.error("discord_rpc.id is not string, ignoring");
   }
-} else if (config.discord_rpc != null) {
-  console.error("discord_rpc is not object, ignoring");
 }
 })().catch(err => { console.error(err); process.exit(); });
