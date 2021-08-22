@@ -1,4 +1,4 @@
-&nbsp;&nbsp;![meGB](icons/banner_64_m.png)\
+&nbsp;&nbsp;![meGB](icons/banner_small.png)\
 A Gameboy emulator written in Node.js
 ---
 Customizable `config.json` file. Able to change menu button labels, keybinds, theme, audio, and more.\
