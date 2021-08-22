@@ -1,38 +1,46 @@
 const { ipcRenderer } = require("electron");
+// set volume
 var vol = 1;
-var d = false;
+var alreadyLoaded = false;
 window.addEventListener("DOMContentLoaded", () => {
-  if (d) return;
-  d = true;
+  // prevent running this code twice
+  if (alreadyLoaded) return;
+  alreadyLoaded = true;
   const pcmPlayer = require("pcm-player");
   var player;
   var lastD;
-  ipcRenderer.once("audioinit", (e, d)=>{
-    if (lastD === JSON.stringify(d)) return;
-    lastD = JSON.stringify(d);
-    if (!d) {
-      if (player) player.destroy();
-      player = null;
-      return;
+  // receive audio info
+  ipcRenderer.once("audioinit", (e, t)=>{
+    // don't reset if it's same
+    if (lastD === JSON.stringify(t)) return;
+    lastD = JSON.stringify(t);
+    // destroy the pcm player
+    if (player) player.destroy();
+    player = null;
+    if (t) {
+      // new pcm player
+      player = new pcmPlayer({
+        inputCodec: t.inputCodec,
+        channels: t.channels,
+        sampleRate: t.sampleRate,
+        flushingTime: t.flushingTime,
+      });
+      player.volume(vol);
     }
-    player = new pcmPlayer({
-      inputCodec: d.inputCodec,
-      channels: d.channels,
-      sampleRate: d.sampleRate,
-      flushingTime: d.flushingTime,
-    });
-    player.volume(vol);
   });
+  // stuff
   var c = document.getElementById("canvas");
   var d = document.getElementById("details");
   var g = c.getContext("2d");
   var s;
   ipcRenderer.on("volume", (e, v) => {
+    // change volume
     vol = v;
     if (player)
       player.volume(v);
   });
   ipcRenderer.on("audio", (e, v) => {
+    // receive audio data
     if (!player) return;
     if (vol > 0)
       player.feed(v);
@@ -42,9 +50,10 @@ window.addEventListener("DOMContentLoaded", () => {
     d.innerText = text;
   });
   ipcRenderer.on("rendergb", (e, scr) => {
-    // set screen
+    // set screen data
     s = scr;
   });
+  // receive what theme etc
   ipcRenderer.invoke("sendstuff", true);
   ipcRenderer.once("theme", (e, theme) => {
     // set theme (one time only)
@@ -64,15 +73,17 @@ window.addEventListener("DOMContentLoaded", () => {
     return false;
   };
   var keybinds = {}; // all keybinds
-  ipcRenderer.once("buttons", (e, kb) => keybinds = kb);
+  ipcRenderer.once("buttons", (e, kb) => keybinds = kb); // receive keybinss
   var keysDown = {};
   ["keydown", "keyup"].forEach(ev => document.body.addEventListener(ev, e => {
-    //if (e.shiftKey) return;
+    // preveny meta, ctrl, and alt
+    // if (e.shiftKey) return;
     if (e.metaKey) return;
     if (e.ctrlKey) return;
     if (e.altKey) return;
     if (!keybinds.hasOwnProperty(e.code)) return;
     e.preventDefault();
+    // set if the key is down
     keysDown[e.code] = e.type == "keydown";
     var o = {
       // is key down, e.code is stored in keysDown not the actual gameboy button
@@ -85,7 +96,7 @@ window.addEventListener("DOMContentLoaded", () => {
     ipcRenderer.invoke("buttonpress", o);
   }));
   const render = () => {
-    // actually render the canvas
+    // render the canvas
     g.clearRect(0, 0, c.width, c.height);
     if (s) {
       var im = g.createImageData(160, 144); // gameboy screen resolution is 160x144
