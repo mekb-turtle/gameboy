@@ -4,9 +4,10 @@
     "enabled": true, // whether to support audio
     "muted": true, // is muted by default? very buggy so recommended to mute
     "isFloat": true, // use Float32 or Int32
-    "flushTime": 150 /* how often in milliseconds to flush audio buffer
+    "flushTime": 150, /* how often in milliseconds to flush audio buffer
       longer means more lag, shorter means more awful to listen to
       i recommend around 150 */
+    "waitForAudio": false // whether to wait for the frame to finish before sending audio or not
   },
   "discord_rpc": { // discord rpc is supported
     "enabled": false, // temporarily disable while developing to stop rate limits
@@ -30,7 +31,8 @@
   },
   "labels": {
     "menu": "meGB",
-    "open_rom": "Open ROM file",
+    "open_rom": "Open ROM",
+    "open_last_rom": "Open last ROM",
     "reboot_rom": "Reboot ROM",
     "close_rom": "Close ROM",
 		"auto_save": "Auto save",
@@ -49,6 +51,7 @@
   },
   "keybinds": {
     "open_rom": "CmdOrCtrl+O",
+    "open_last_rom": "CmdOrCtrl+Shift+O",
 		"reboot_rom": "CmdOrCtrl+R",
 		"close_rom": "CmdOrCtrl+W",
 		"auto_save": "CmdOrCtrl+Shift+S",

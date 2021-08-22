@@ -12,7 +12,7 @@ window.addEventListener("DOMContentLoaded", () => {
   // receive audio info
   ipcRenderer.once("audioinit", (e, t)=>{
     // don't reset if it's same
-    if (lastD === JSON.stringify(t)) return;
+    // if (lastD === JSON.stringify(t)) return;
     lastD = JSON.stringify(t);
     // destroy the pcm player
     if (player) player.destroy();
@@ -109,4 +109,5 @@ window.addEventListener("DOMContentLoaded", () => {
     window.requestAnimationFrame(render);
   };
   window.requestAnimationFrame(render);
+  document.addEventListener("contextmenu", e => e.preventDefault());
 });

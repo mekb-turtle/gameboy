@@ -1,7 +1,8 @@
 if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, { textbar, audio }, callQuit) => {
+module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
+  { textbar, audio }, callQuit, { lastRomFilename }) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -57,20 +58,134 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     }
     return file.slice(romHash.length);
   };
+  const lastRomFilePrefix = "lastromlocation_";
+  const lastRomFileSuffix = "_";
   // valid cartridge types for checking if
   // file is actually a valid gameboy rom file
   const validCartridgeTypes = [0x00,0x01,0x02,0x03,0x05,0x06,0x08,0x09,0x0B,
     0x0C,0x0D,0x0F,0x10,0x11,0x12,0x13,0x19,0x1A,0x1B,0x1C,0x1D,
     0x1E,0x1F,0x22,0xFD,0xFE,0xFF];
+  // update the title of the window
   const updateTitle = () => {
     var e = getRomName();
     var t = `${windowTitle}${e?` - ${e}`:``}`;
     window_.setTitle(t);
   };
   updateTitle();
+  // handler for opening files
+  const openFileHandler = async (fname) => {
+    try {
+      var fileData = await fs.readFile(fname);
+      await saveBeforeUnload();
+      const cHash = () => {
+        romHash = Buffer.concat([
+          Buffer.from("romhash_"),
+          crypto.createHash("sha256").update(rom).digest(),
+          Buffer.from("_"),
+        ]);
+      };
+      save = null;
+      canSave = false;
+      rom = fileData;
+      cHash();
+      rom = null;
+      startTimestamp = null;
+      updateTitle();
+      if (gameboy) getPrivate()?.shutdownEmulation();
+      // loads rom and save file from s argument, see below this function
+      var z = async (s) => {
+        try {
+          canSave = false;
+          gameboy = new Gameboy();
+          var p;
+          try {
+            if (s) gameboy.loadRom(fileData, s);
+            else gameboy.loadRom(fileData);
+            p = getPrivate();
+          } catch {}
+          rom = null;
+          save = null;
+          if (p && validCartridgeTypes.includes(p?.gameboy?.cartridgeType)) {
+            if (s) save = s;
+            rom = fileData;
+            cHash();
+            updateTitle();
+            startTimestamp = new Date();
+            initAudio();
+            try {
+              fs.writeFile(lastRomFilename, Buffer.from(`${lastRomFilePrefix}${fname}${lastRomFileSuffix}`));
+            } catch (err) {
+              zErr(err);
+            }
+          } else {
+            // kills gameboy if invalid rom or error loading the rom
+            if (p) p.shutdownEmulation();
+            romHash = null;
+            gameboy = null;
+            rom = null;
+            startTimestamp = null;
+            save = null;
+            updateTitle();
+            initAudio();
+            zErr("Invalid ROM");
+          }
+        } catch (err) {
+          // kills gameboy
+          romHash = null;
+          gameboy = null;
+          rom = null;
+          save = null;
+          updateTitle();
+          initAudio();
+          zErr(err);
+        }
+      };
+      saveFileName = `${fname}.sav`;
+      try {
+        if (await exists(saveFileName)) {
+          var saveFileData = await fs.readFile(saveFileName);
+          var d = isAllowedFile(saveFileData);
+          if (d) {
+            await z(d);
+          } else {
+            await z();
+            electron.dialog.showMessageBox(window_, {
+              type: "error",
+              message: "Invalid save file or wrong ROM loaded"
+            });
+          }
+        } else {
+          z();
+        }
+      } catch (err) {
+        zErr(err);
+      }
+    } catch (err) {
+      zErr(err);
+    }
+  };
+  const openLastRom = async () => {
+    try {
+      try {
+        var data = await fs.readFile(lastRomFilename);
+      } catch (err) {
+        if (err.code !== "ENOENT") throw err;
+      }
+      if (data.includes(0)) return;
+      var data = data.toString();
+      if (!data.startsWith(lastRomFilePrefix)) return
+      if (!data.endsWith(lastRomFileSuffix)) return
+      var path = data.substring(lastRomFilePrefix.length, data.length - lastRomFileSuffix.length);
+      if (await exists(path)) {
+        await openFileHandler(path);
+      }
+    } catch (err) {
+      zErr(err);
+    }
+  };
   const openRom = async () => {
     await saveBeforeUnload();
-    electron.dialog.showOpenDialog(window_, {
+    var res = await electron.dialog.showOpenDialog(window_, {
       properties: ["openFile"],
       buttonLabel: "Open",
       filters: [
@@ -78,87 +193,10 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
         {name: "All", extensions: ["*"]},
       ],
       title: "Open ROM"
-    }).then(async res => {
-      if (res.canceled) return;
-      if (res.filePaths.length != 1) return;
-      fs.readFile(res.filePaths[0]).then(async fileData => {
-        var cHash = () => {
-          romHash = Buffer.concat([
-            Buffer.from("romhash_"),
-            crypto.createHash("sha256").update(rom).digest(),
-            Buffer.from("_"),
-          ]);
-        }
-        save = null;
-        canSave = false;
-        rom = fileData;
-        cHash();
-        rom = null;
-        startTimestamp = null;
-        updateTitle();
-        if (gameboy) getPrivate()?.shutdownEmulation();
-        // loads rom and save file from s argument, see below this function
-        var z = (s) => {
-          try {
-            canSave = false;
-            gameboy = new Gameboy();
-            var p;
-            try {
-              if (s) gameboy.loadRom(fileData, s);
-              else gameboy.loadRom(fileData);
-              p = getPrivate();
-            } catch {}
-            rom = null;
-            save = null;
-            if (p && validCartridgeTypes.includes(p?.gameboy?.cartridgeType)) {
-              if (s) save = s;
-              rom = fileData;
-              cHash();
-              updateTitle();
-              startTimestamp = new Date();
-              initAudio();
-            } else {
-              // kills gameboy if invalid rom or error loading the rom
-              if (p) p.shutdownEmulation();
-              romHash = null;
-              gameboy = null;
-              rom = null;
-              startTimestamp = null;
-              save = null;
-              updateTitle();
-              initAudio();
-              zErr("Invalid ROM");
-            }
-          } catch (err) {
-            // kills gameboy
-            romHash = null;
-            gameboy = null;
-            rom = null;
-            save = null;
-            updateTitle();
-            zErr(err);
-            initAudio();
-          }
-        };
-        saveFileName = res.filePaths[0]+".sav";
-        if (await exists(saveFileName)) {
-          fs.readFile(saveFileName).then(saveFileData => {
-            var d = isAllowedFile(saveFileData);
-            if (d) {
-              z(d);
-            } else {
-              electron.dialog.showMessageBox(window_, {
-                type: "error",
-                message: "Invalid save file or wrong ROM loaded"
-              });
-              z();
-            }
-          }).catch(err => zErr(err));
-        } else {
-          z();
-        }
-      }).catch(err => zErr(err));
     });
+    if (res.canceled) return;
+    if (res.filePaths.length != 1) return;
+    await openFileHandler(res.filePaths[0]);
   };
   const isExperimental = () => {
     // alerts that feature is experimental
@@ -194,37 +232,41 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
       if (save) gameboy.loadRom(rom, save);
       else gameboy.loadRom(rom);
       initAudio();
+      updateTitle();
     } catch (err) {
       zErr(err);
     }
-    updateTitle();
   };
   var autosave = true;
   const setAutosave = e => autosave = e;
   var lastSave;
   const saveSave = async (isManual) => {
-    // annoying code
-    if (!(autosave || isManual)) return;
-    if (saving) return;
-    if (!canSave) return;
-    if (checkIfRom(true)) return;
-    var saveS = gameboy.getSaveData();
-    var saveFile = Buffer.concat([romHash, Buffer.from(saveS)]);
-    if (lastSave != null && !isManual) // don't save if nothing changed unless manual save
-      if (Buffer.compare(saveFile, lastSave) === 0) return;
-    saving = true;
-    canSave = false;
-    if (await exists(saveFileName))
-      await fs.copyFile(saveFileName, saveFileName + ".bak").catch(e=>zErr(e));
-    await fs.writeFile(saveFileName, saveFile).catch(e=>{ zErr(e); saving=false; });
-    // important to set save variable otherwise rebootRom will load save
-    // from what was read in openRom not actual current save file
-    save = saveS;
-    // have to import a whole package just to check if nothing changed
-    // i can't figure out how to clone a buffer normally
-    lastSave = cloneBuffer(saveFile);
-    saving = false;
-    saveDisplayTime = fps;
+    try {
+      // annoying code
+      if (!(autosave || isManual)) return;
+      if (saving) return;
+      if (!canSave) return;
+      if (checkIfRom(true)) return;
+      var saveS = gameboy.getSaveData();
+      var saveFile = Buffer.concat([romHash, Buffer.from(saveS)]);
+      if (lastSave != null && !isManual) // don't save if nothing changed unless manual save
+        if (Buffer.compare(saveFile, lastSave) === 0) return;
+      saving = true;
+      canSave = false;
+      if (await exists(saveFileName))
+        await fs.copyFile(saveFileName, saveFileName + ".bak").catch(e=>zErr(e));
+      await fs.writeFile(saveFileName, saveFile).catch(e=>{ zErr(e); saving=false; });
+      // important to set save variable otherwise rebootRom will load save
+      // from what was read in openRom not actual current save file
+      save = saveS;
+      // have to import a whole package just to check if nothing changed
+      // i can't figure out how to clone a buffer normally
+      lastSave = cloneBuffer(saveFile);
+      saving = false;
+      saveDisplayTime = fps;
+    } catch (err) {
+      zErr(err);
+    }
   };
   const openState = async () => {
     // not done yet, serverboy's setMemory function is experimental
@@ -394,12 +436,17 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     canFrameAdvance = true;
     if (paused) return;
     frame();
-    sendAudio();
+    if (audio.waitForAudio) sendAudio();
   }, Math.floor(1e3/fps));
   setInterval(() => {
     // interval for sendFrame
     sendFrame();
   }, Math.floor(1e3/fps));
+  if (!audio.waitForAudio)
+    setInterval(() => {
+      // interval for sendAudio
+      sendAudio();
+    }, Math.floor(1e3/fps));
   setInterval(() => {
     sendInfo();
   }, Math.floor(100));
@@ -412,13 +459,12 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     paused = !paused;
     zzz(paused);
   };
-  var b = false;
-  var vol = 1;
+  var vol = audio.muted ? 0 : 1;
   const toggleMute = () => {
     vol = +vol<=0;
     window_.webContents.send("volume", vol);
     initAudio();
-    if (b) zzy(!vol);
+    zzy(!vol);
     return vol;
   };
   const frameAdvance = () => {
@@ -438,11 +484,11 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     sendFrame();
     canFrameAdvance = false;
   };
-  if (audio.muted) toggleMute();
   const callReady = () => {
+    vol = audio.muted ? 0 : 1;
+    window_.webContents.send("volume", vol);
     zzz(paused);
     zzy(!vol);
-    b = true;
   }
-  return { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady };
+  return { openRom, openLastRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady };
 };

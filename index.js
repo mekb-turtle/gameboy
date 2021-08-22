@@ -16,7 +16,7 @@ const calcWidth  = scaling => 160*scaling;
 const calcHeight = scaling => 144*scaling+25+16;
 const windowTitle = "meGB"; // title
 const configFile = "config.json";
-const gFile = f => path.join(__dirname, f);
+const gFile = f => path.join(...[__dirname, ...f.split("/")]);
 const gameboyIcon = electron.nativeImage.createFromPath(gFile("icons/icon_upscaled.png"));
 const gameboyOnIcon = electron.nativeImage.createFromPath(gFile("icons/icon_upscaled_on.png"));
 const window_ = new electron.BrowserWindow({
@@ -60,7 +60,6 @@ if (await exists(configFile)) {
     console.error("failed reading config.json", e);
   }
 }
-window_.webContents.openDevTools();
 var rpc;
 var isRPC = false;
 const setRPC = (t) => {
@@ -91,8 +90,9 @@ const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").i
 // set muted text
 const zzy = (p) => { if (config.audio) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
 // require gb
-const { openRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady }
-  = require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, config, callQuit ); // load gb.js with variables
+const { openRom, openLastRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady }
+  = require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
+    config, callQuit, { lastRomFilename: gFile(".lastrompath") } ); // load gb.js with variables
 const infoDialog = () => {
   // info dialog
   electron.dialog.showMessageBox(window_, {
@@ -120,6 +120,7 @@ menu = [
     { label: config.labels.frame_advance, click: frameAdvance,                  accelerator: config.keybinds.frame_advance },
     { type: "separator" },
     { label: config.labels.open_rom,      click: openRom,                       accelerator: config.keybinds.open_rom },
+    { label: config.labels.open_last_rom, click: openLastRom,                   accelerator: config.keybinds.open_last_rom },
     { label: config.labels.reboot_rom,    click: rebootRom,                     accelerator: config.keybinds.reboot_rom },
     { label: config.labels.close_rom,     click: closeRom,                      accelerator: config.keybinds.close_rom },
     { type: "separator" },
