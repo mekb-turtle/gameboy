@@ -1,7 +1,7 @@
 if (require.main === module) {
   console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, { textbar, audio: isAudio }, callQuit) => {
+module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists, { textbar, audio }, callQuit) => {
   const crypto = require("crypto");
   const cloneBuffer = require("clone-buffer");
   const fs = require("fs").promises;
@@ -339,16 +339,16 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
   };
   const initAudio = () => {
     try {
-      if (!isAudio || !gameboy || !rom) {
+      if (!audio?.enabled || !gameboy || !rom) {
         window_.webContents.send("audioinit", null);
       } else {
         var p = getPrivate().gameboy;
         // send audio info like codec and sample rate
         window_.webContents.send("audioinit", {
-          inputCodec: "Float32",
+          inputCodec: audio.isFloat ? "Float32" : "Int32",
           channels: 2,
           sampleRate: p.clocksPerSecond / p.audioResamplerFirstPassFactor,
-          flushTime: 1000 / 60,
+          flushTime: audio.flushTime,
         });
       }
     } catch (err) {
@@ -438,9 +438,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
     sendFrame();
     canFrameAdvance = false;
   };
-  // remove next line when audio works without glitches
-  toggleMute();
-  // 
+  if (audio.muted) toggleMute();
   const callReady = () => {
     zzz(paused);
     zzy(!vol);

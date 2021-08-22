@@ -1,6 +1,13 @@
 {
   "theme": "dark", // currently only dark and light
-  "audio": true,
+  "audio": {
+    "enabled": true, // whether to support audio
+    "muted": true, // is muted by default? very buggy so recommended to mute
+    "isFloat": true, // use Float32 or Int32
+    "flushTime": 150 /* how often in milliseconds to flush audio buffer
+      longer means more lag, shorter means more awful to listen to
+      i recommend around 150 */
+  },
   "discord_rpc": { // discord rpc is supported
     "enabled": false, // temporarily disable while developing to stop rate limits
     "id": "872824485747777567", // client id

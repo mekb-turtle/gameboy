@@ -23,7 +23,7 @@ window.addEventListener("DOMContentLoaded", () => {
         inputCodec: t.inputCodec,
         channels: t.channels,
         sampleRate: t.sampleRate,
-        flushingTime: t.flushingTime,
+        flushTime: t.flushTime,
       });
       player.volume(vol);
     }
