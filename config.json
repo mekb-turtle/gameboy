@@ -1,40 +1,53 @@
 {
-  "theme": "dark", // currently only dark and light
-  "audio": {
-    "enabled": true, // whether to support audio
-    "muted": true, // is muted by default? very buggy so recommended to mute
-    "isFloat": true, // use Float32 or Int32
-    "flushTime": 150, /* how often in milliseconds to flush audio buffer
-      longer means more lag, shorter means more awful to listen to
-      i recommend around 150 */
-    "waitForAudio": false // whether to wait for the frame to finish before sending audio or not
-  },
-  "discord_rpc": { // discord rpc is supported
-    "enabled": false, // temporarily disable while developing to stop rate limits
-    "id": "872824485747777567", // client id
-    "off_icon": "gameboy",
-    "on_icon": "gameboy_on",
-    "icon_label": "meGB",
-    "small_paused_icon": "pause",
-    "small_playing_icon": "play",
-    "small_paused_icon_label": "Paused",
-    "small_playing_icon_label": "Playing",
-    "details_text": "Gameboy Emulator"
-  },
-  "textbar": {
-    "show_frame_count": false, // show how many frames has gameboy been running for
-    "saved_text": " - Saved",
-    "saving_text": " - Saving",
-    "frame_count_text": " - ",
-    "paused_text": "Paused ",
-    "playing_text": "Playing "
-  },
-  "labels": {
-    "menu": "meGB",
-    "open_rom": "Open ROM",
-    "open_last_rom": "Open last ROM",
-    "reboot_rom": "Reboot ROM",
-    "close_rom": "Close ROM",
+	"theme": "dark", // currently only dark and light
+	"audio": {
+		"enabled": true, // whether to support audio
+		"muted": true, // is muted by default?
+		"is_float": true, // use Float32 or Int32
+		"flush_time": 150, /* how often in milliseconds to flush audio buffer
+			longer means more lag, shorter means more awful to listen to
+			i recommend around 150 */
+		"wait_for_audio": false, /* whether to wait for the frame to finish before sending
+			audio or not, i recommend you keep this disabled otherwise the audio can sound
+			more choppier */
+		"send_once_while_paused": true /*
+			whether to keep sending audio or only send once when frame advancing, disabling this
+			will cause the same audio wave to be stuck when paused */
+	},
+	"discord_rpc": { // discord rpc is supported
+		"enabled": false, /* disable this while developing or if you don't
+			have discord to stop rate limits */
+		"id": "872824485747777567", // client id
+		"off_icon": "gameboy",
+		"on_icon": "gameboy_on",
+		"icon_label": "meGB",
+		"small_paused_icon": "pause",
+		"small_playing_icon": "play",
+		"small_paused_icon_label": "Paused",
+		"small_playing_icon_label": "Playing",
+		"details_text": "Gameboy Emulator"
+	},
+	"text_bar": {
+		"rom_loaded": "${paused:`Paused`}${paused:!`Playing`}${name:` - `}${name}${saving:` - Saving`}${saved:` - Saved`}", /*
+			replace placeholders:
+				${foo}        will use the variable foo,
+				${foo:`bar`}  will use the text bar if the variable foo is truthy
+				${foo:!`bar`} will use the text bar if the variable foo is not truthy
+			variables:
+				paused  - if paused (use :! instead of : for if playing)
+				name    - display name of rom
+				frames  - how many frames past rom load
+				saving  - if saving
+				saved   - if a couple seconds after finished saving
+				notsave - if not saving nor a couple seconds after finished saving */
+		"rom_not_loaded": ""
+	},
+	"labels": {
+		"menu": "meGB",
+		"open_rom": "Open ROM",
+		"open_last_rom": "Open last ROM",
+		"reboot_rom": "Reboot ROM",
+		"close_rom": "Close ROM",
 		"auto_save": "Auto save",
 		"manual_save": "Manual save",
 		"pause": "Pause",
@@ -42,16 +55,16 @@
 		"frame_advance": "Frame advance",
 		"open_state": "Open state file",
 		"save_state": "Save state file",
-    "scale_sub": "Size",
-    "scale": "$Sx", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
+		"scale_sub": "Size",
+		"scale": "$Sx", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
 		"mute": "Mute",
 		"unmute": "Unmute",
-    "info": "Info",
-    "exit": "Exit"
-  },
-  "keybinds": {
-    "open_rom": "CmdOrCtrl+O",
-    "open_last_rom": "CmdOrCtrl+Shift+O",
+		"info": "Info",
+		"exit": "Exit"
+	},
+	"keybinds": {
+		"open_rom": "CmdOrCtrl+O",
+		"open_last_rom": "CmdOrCtrl+Shift+O",
 		"reboot_rom": "CmdOrCtrl+R",
 		"close_rom": "CmdOrCtrl+W",
 		"auto_save": "CmdOrCtrl+Shift+S",
@@ -60,34 +73,34 @@
 		"frame_advance": "\\",
 		"open_state": "CmdOrCtrl+C",
 		"save_state": "CmdOrCtrl+X",
-    "scale": "Shift+$O", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
+		"scale": "Shift+$O", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
 		"toggle_mute": "CmdOrCtrl+M",
-    "info": "F1",
-    "exit": null
-  },
-  "set_sizes": [1, 2, 4, 6], // size submenu
-  "button_keybinds": { // uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
-    "ArrowLeft": "LEFT",
-    "ArrowRight": "RIGHT",
-    "ArrowUp": "UP",
-    "ArrowDown": "DOWN",
-    "KeyA": "LEFT",
-    "KeyD": "RIGHT",
-    "KeyW": "UP",
-    "KeyS": "DOWN",
-    "KeyJ": "LEFT",
-    "KeyL": "RIGHT",
-    "KeyI": "UP",
-    "KeyK": "DOWN",
-    "Numpad5": "A",
-    "Numpad6": "B",
-    "KeyZ": "A",
-    "KeyX": "B",
-    "ShiftLeft": "SELECT",
-    "Quote": "SELECT",
-    "KeyP": "START",
-    "Enter": "START",
-    "Comma": "A",
-    "Period": "B"
-  }
+		"info": "F1",
+		"exit": null
+	},
+	"set_sizes": [1, 2, 4, 6], // size submenu
+	"button_keybinds": { // uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
+		"ArrowLeft": "LEFT",
+		"ArrowRight": "RIGHT",
+		"ArrowUp": "UP",
+		"ArrowDown": "DOWN",
+		"KeyA": "LEFT",
+		"KeyD": "RIGHT",
+		"KeyW": "UP",
+		"KeyS": "DOWN",
+		"KeyJ": "LEFT",
+		"KeyL": "RIGHT",
+		"KeyI": "UP",
+		"KeyK": "DOWN",
+		"Numpad5": "A",
+		"Numpad6": "B",
+		"KeyZ": "A",
+		"KeyX": "B",
+		"ShiftLeft": "SELECT",
+		"Quote": "SELECT",
+		"KeyP": "START",
+		"Enter": "START",
+		"Comma": "A",
+		"Period": "B"
+	}
 }
