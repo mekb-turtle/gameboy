@@ -1,8 +1,15 @@
 if (require.main === module) {
 	console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
-	{ text_bar, audio }, callQuit, { lastRomFilename }) => {
+module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
+	{ text_bar, audio, title }, callQuit, { lastRomFilename }) => {
+	const replacePlaceholders = (string, replacers) => {
+		return string.replace(/\$\{([a-zA-Z0-9_\$]+)(\:(\!?)\`([^`]*)\`)?\}/g, (t, t1, t2, t4, t3) => {
+			if (!replacers.hasOwnProperty(t1)) return t;
+			if (t2) return !(t4 ? replacers[t1] : !replacers[t1]) ? t3 : "";
+			return replacers[t1];
+		});
+	};
 	const crypto = require("crypto");
 	const cloneBuffer = require("clone-buffer");
 	const fs = require("fs").promises;
@@ -67,9 +74,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
 		0x1E,0x1F,0x22,0xFD,0xFE,0xFF];
 	// update the title of the window
 	const updateTitle = () => {
-		var e = getRomName();
-		var t = `${windowTitle}${e?` - ${e}`:``}`;
-		window_.setTitle(t);
+		window_.setTitle(replacePlaceholders(title, { name: getRomName() }));
 	};
 	updateTitle();
 	// handler for opening files
@@ -202,7 +207,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
 		// alerts that feature is experimental
 		electron.dialog.showMessageBox(window_, {
 			type: "error",
-			message: "This feature is experimental, you cannot use it yet"
+			message: "This feature is experimental"
 		});
 		return false;
 	};
@@ -399,13 +404,6 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, 
 			zErr(err);
 		}
 	};
-	const replacePlaceholders = (string, replacers) => {
-		return string.replace(/\$\{([a-zA-Z0-9_\$]+)(\:(\!?)\`([^`]*)\`)?\}/g, (t, t1, t2, t4, t3) => {
-			if (!replacers.hasOwnProperty(t1)) return t;
-			if (t2) return !(t4 ? replacers[t1] : !replacers[t1]) ? t3 : "";
-			return replacers[t1];
-		});
-	}
 	const sendInfo = () => {
 		var name = getRomName();
 		if (saveDisplayTime > 0) --saveDisplayTime;

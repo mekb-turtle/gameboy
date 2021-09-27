@@ -27,6 +27,7 @@
 		"small_playing_icon_label": "Playing",
 		"details_text": "Gameboy Emulator"
 	},
+	"title": "meGB${name:` - `}${name}",
 	"text_bar": {
 		"rom_loaded": "${paused:`Paused`}${paused:!`Playing`}${name:` - `}${name}${saving:` - Saving`}${saved:` - Saved`}", /*
 			replace placeholders:

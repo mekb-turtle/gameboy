@@ -14,7 +14,6 @@ const fs = require("fs").promises;
 await electron.app.whenReady();
 const calcWidth  = scaling => 160*scaling;
 const calcHeight = scaling => 144*scaling+25+16;
-const windowTitle = "meGB"; // title
 const configFile = "config.json";
 const gFile = f => path.join(...[__dirname, ...f.split("/")]);
 const gameboyIcon = electron.nativeImage.createFromPath(gFile("icons/icon_upscaled.png"));
@@ -24,7 +23,7 @@ const window_ = new electron.BrowserWindow({
 	height:    calcHeight(2),
 	minWidth:  calcWidth(1),
 	minHeight: calcHeight(1),
-	title: windowTitle,
+	title: " ",
 	devTools: true,
 	webPreferences: {
 		preload: gFile("preload.js")
@@ -94,7 +93,7 @@ const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").i
 const zzy = (p) => { if (config.audio.enabled) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
 // require gb
 const { openRom, openLastRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady }
-	= require("./gb.js")( electron, window_, zErr, { zzz, zzy }, windowTitle, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
+	= require("./gb.js")( electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
 		config, callQuit, { lastRomFilename: gFile(".lastrompath") } ); // load gb.js with variables
 const infoDialog = () => {
 	// info dialog
