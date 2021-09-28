@@ -2,7 +2,7 @@ if (require.main === module) {
 	console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
 module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
-	{ text_bar, audio, title }, callQuit, { lastRomFilename }) => {
+	{ text_bar, audio, title, fps: fpsC }, callQuit, { lastRomFilename }) => {
 	const replacePlaceholders = (string, replacers) => {
 		return string.replace(/\$\{([a-zA-Z0-9_\$]+)(\:(\!?)\`([^`]*)\`)?\}/g, (t, t1, t2, t4, t3) => {
 			if (!replacers.hasOwnProperty(t1)) return t;
@@ -10,10 +10,13 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 			return replacers[t1];
 		});
 	};
+	const { performance } = require("perf_hooks");
 	const crypto = require("crypto");
 	const cloneBuffer = require("clone-buffer");
 	const fs = require("fs").promises;
-	const fps = 60 * 2;
+	const fps = fpsC.target * fpsC.multiplier;
+	var currentFramerate = 0;
+	var lastMs = 0;
 	// Date object when user loaded rom
 	var startTimestamp;
 	var rom;
@@ -363,14 +366,29 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 		// handle button press
 		buttonsDown[o.button] = o.press;
 	});
+	// framerate stuff
 	var frameAdvancedAudio = false;
+	var framerates = [];
+	var framerateAverage = 0;
 	const frame = () => {
-		if (!rom) return;
+		const fps = () => {
+			// fps calculation
+			var now = performance.now();
+			currentFramerate = now-lastMs;
+			framerates.push(currentFramerate);
+			lastMs = now;
+		};
+		if (!rom) {
+			fps();
+			return;
+		}
 		// probably one of the most important functions
 		// to actually frame advance
 		// press input from buttonsDown
 		gameboy.pressKeys(Object.keys(buttonsDown).filter(e => buttonsDown[e]).map(e => Gameboy.KEYMAP[e]));
 		gameboy.doFrame();
+		fps();
+		// stop same wave when paused
 		frameAdvancedAudio = false;
 		// enable autosave again
 		// shouldn't keep autosaving while paused as gameboy can't change
@@ -420,11 +438,16 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 		try {
 			setOnIcon(rom);
 		} catch {}
+		var fps = Math.floor(1e3/framerateAverage/fpsC.average_interval);
+		if (fps == Infinity) fps = 0;
 		try {
 			window_.webContents.send("details", rom ? replacePlaceholders(text_bar.rom_loaded, {
 				paused, name, frames: getPrivate().frames,
-				saving, saved: !saving&&saveDisplayTime>0, notsave: saveDisplayTime<=0&&!saving
-			}) : text_bar.rom_not_loaded);
+				saving, saved: !saving&&saveDisplayTime>0, notsave: saveDisplayTime<=0&&!saving,
+				fps
+			}) : replacePlaceholders(text_bar.rom_not_loaded, {
+				paused, fps
+			}));
 		} catch {}
 	};
 	var paused = false;
@@ -434,10 +457,20 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 			if (rom) {
 				if (audio.send_once_while_paused && frameAdvancedAudio && paused) return;
 				frameAdvancedAudio = true;
-				window_.webContents.send("audio", gameboy.getAudio());
+				var a = gameboy.getAudio();
+				if (a.filter((item, index, array) => index == array.indexOf(item)).length > 1)
+					window_.webContents.send("audio", a);
 			}
 		} catch {}
 	};
+	setInterval(() => {
+		if (framerates.length > 0) {
+			framerateAverage = framerates.reduce((s, a) => s + a, 0) / framerates.length;
+			framerates = [];
+		} else {
+			framerateAverage = 0;
+		}
+	}, fpsC.average_interval);
 	// intervals
 	setInterval(() => {
 		// interval for frame advancing while not paused

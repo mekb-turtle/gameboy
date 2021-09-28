@@ -27,9 +27,14 @@
 		"small_playing_icon_label": "Playing",
 		"details_text": "Gameboy Emulator"
 	},
+	"fps": {
+		"target": 60,
+		"multiplier": 2, // not sure why but running at 60 actually is half speed of normal
+		"average_interval": 250 // in ms, interval of average fps display
+	},
 	"title": "meGB${name:` - `}${name}",
 	"text_bar": {
-		"rom_loaded": "${paused:`Paused`}${paused:!`Playing`}${name:` - `}${name}${saving:` - Saving`}${saved:` - Saved`}", /*
+		"rom_loaded": "${fps}fps - ${paused:`Paused`}${paused:!`Playing`}${name:` - `}${name}${saving:` - Saving`}${saved:` - Saved`}", /*
 			replace placeholders:
 				${foo}        will use the variable foo,
 				${foo:`bar`}  will use the text bar if the variable foo is truthy
@@ -40,8 +45,9 @@
 				frames  - how many frames past rom load
 				saving  - if saving
 				saved   - if a couple seconds after finished saving
-				notsave - if not saving nor a couple seconds after finished saving */
-		"rom_not_loaded": ""
+				notsave - if not saving nor a couple seconds after finished saving
+				fps     - current fps */
+		"rom_not_loaded": "${fps}fps"
 	},
 	"labels": {
 		"menu": "meGB",
@@ -63,7 +69,7 @@
 		"info": "Info",
 		"exit": "Exit"
 	},
-	"keybinds": {
+	"keybinds": { // check https://www.electronjs.org/docs/api/accelerator
 		"open_rom": "CmdOrCtrl+O",
 		"open_last_rom": "CmdOrCtrl+Shift+O",
 		"reboot_rom": "CmdOrCtrl+R",
@@ -77,7 +83,7 @@
 		"scale": "Shift+$O", // $S = actual scale 1 2 4 6 etc, $I = index from 0, $O = index from 1
 		"toggle_mute": "CmdOrCtrl+M",
 		"info": "F1",
-		"exit": null
+		"exit": "CmdOrCtrl+Q"
 	},
 	"set_sizes": [1, 2, 4, 6], // size submenu
 	"button_keybinds": { // uses keydown/keyup event.code, if you want to change these i recommend https://keycode.info (look at event.code)
@@ -93,6 +99,8 @@
 		"KeyL": "RIGHT",
 		"KeyI": "UP",
 		"KeyK": "DOWN",
+		"KeyX": "SELECT",
+		"KeyC": "START",
 		"Numpad5": "A",
 		"Numpad6": "B",
 		"KeyZ": "A",
