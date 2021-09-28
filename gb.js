@@ -175,6 +175,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 				var data = await fs.readFile(lastRomFilename);
 			} catch (err) {
 				if (err.code !== "ENOENT") throw err;
+				return;
 			}
 			if (data.includes(0)) return;
 			var data = data.toString();
