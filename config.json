@@ -4,19 +4,12 @@
 		"enabled": true, // whether to support audio
 		"muted": true, // is muted by default?
 		"is_float": true, // use Float32 or Int32
-		"flush_time": 150, /* how often in milliseconds to flush audio buffer
-			longer means more lag, shorter means more awful to listen to
-			i recommend around 150 */
-		"wait_for_audio": false, /* whether to wait for the frame to finish before sending
-			audio or not, i recommend you keep this disabled otherwise the audio can sound
-			more choppier */
-		"send_once_while_paused": true /*
-			whether to keep sending audio or only send once when frame advancing, disabling this
-			will cause the same audio wave to be stuck when paused */
+		"flush_time": 150, // how often in milliseconds to flush audio buffer, longer means more lag, shorter means more awful to listen to, i recommend around 150
+		"wait_for_audio": false, // whether to wait for the frame to finish before sending audio or not, i recommend you keep this disabled otherwise the audio can sound more choppier
+		"send_once_while_paused": true // whether to keep sending audio or only send once when frame advancing, disabling this will cause the same audio sample to be stuck when paused
 	},
 	"discord_rpc": { // discord rpc is supported
-		"enabled": false, /* disable this while developing or if you don't
-			have discord to stop rate limits */
+		"enabled": true, // disable this while developing to stop rate limits or if you don't have discord
 		"id": "872824485747777567", // client id
 		"off_icon": "gameboy",
 		"on_icon": "gameboy_on",
@@ -27,26 +20,31 @@
 		"small_playing_icon_label": "Playing",
 		"details_text": "Gameboy Emulator"
 	},
+	"terminalOutput": { // display the game to terminal
+		"enabled": false,
+		"clear": true, // whether to clear terminal before every frame
+		"delay": 500 // in milliseconds, so the terminal can keep up
+	},
 	"fps": {
-		"target": 60,
-		"multiplier": 2, // not sure why but running at 60 actually is half speed of normal
-		"average_interval": 250 // in ms, interval of average fps display
+		"target": 60, // what it's trying to achieve
+		"multiplier": 2, // not sure why but running at 60 actually is half speed of normal, if someone knows why please open an issue
+		"average_interval": 250 // in milliseconds, how often to update the fps display
 	},
 	"title": "meGB${name:` - `}${name}",
 	"text_bar": {
-		"rom_loaded": "${fps}fps - ${paused:`Paused`}${paused:!`Playing`}${name:` - `}${name}${saving:` - Saving`}${saved:` - Saved`}", /*
-			replace placeholders:
-				${foo}        will use the variable foo,
-				${foo:`bar`}  will use the text bar if the variable foo is truthy
-				${foo:!`bar`} will use the text bar if the variable foo is not truthy
-			variables:
-				paused  - if paused (use :! instead of : for if playing)
-				name    - display name of rom
-				frames  - how many frames past rom load
-				saving  - if saving
-				saved   - if a couple seconds after finished saving
-				notsave - if not saving nor a couple seconds after finished saving
-				fps     - current fps */
+		"rom_loaded": "${fps}fps - ${paused:`Paused`}${paused:!`Playing`}${name:` - `}${name}${saving:` - Saving`}${saved:` - Saved`}",
+//			placeholders:
+//				${foo}        will use the variable foo,
+//				${foo:`bar`}  will use the text bar if the variable foo is truthy
+//				${foo:!`bar`} will use the text bar if the variable foo is not truthy
+//			variables:
+//				paused  - if paused (use :! instead of : for if playing)
+//				name    - display name of rom
+//				frames  - how many frames past rom load
+//				saving  - if saving
+//				saved   - if a couple seconds after finished saving
+//				notsave - if not saving nor a couple seconds after finished saving
+//				fps     - current fps
 		"rom_not_loaded": "${fps}fps"
 	},
 	"labels": {

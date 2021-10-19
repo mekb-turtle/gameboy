@@ -2,7 +2,7 @@ if (require.main === module) {
 	console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
 module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
-	{ text_bar, audio, title, fps: fpsC }, callQuit, { lastRomFilename }) => {
+	{ text_bar, audio, title, fps: fpsC, terminalOutput }, callQuit, { lastRomFilename }) => {
 	const replacePlaceholders = (string, replacers) => {
 		return string.replace(/\$\{([a-zA-Z0-9_\$]+)(\:(\!?)\`([^`]*)\`)?\}/g, (t, t1, t2, t4, t3) => {
 			if (!replacers.hasOwnProperty(t1)) return t;
@@ -397,10 +397,31 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 	};
 	// shows Saved text because saving is too quick for the user to see
 	var saveDisplayTime = 0;
+	// terminal stuff
+	var termImg;
+	var jimp;
+	var canDraw;
+	if (terminalOutput.enabled) {
+		termImg = require("show-image-terminal");
+		Jimp = require("jimp");
+		canDraw = 0;
+	}
 	// send the screen data and details to the preload.js
 	const sendFrame = () => {
 		var scr;
 		if (rom) scr = gameboy.getScreen();
+		if (terminalOutput.enabled) {
+			var perfNow = performance.now();
+			if (perfNow > canDraw && scr) {
+				canDraw = perfNow + terminalOutput.delay;
+				var s = new Jimp(160, 144);
+				scr.map((e, i) => s.bitmap.data[i] = e);
+				termImg(s).then(d => {
+					if (terminalOutput.clear) process.stdout.write("\x1b[H\x1b[2J\x1b[3J");
+					process.stdout.write(d+"\n");
+				});
+			}
+		}
 		try {
 			window_.webContents.send("rendergb", scr);
 		} catch {}
