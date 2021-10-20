@@ -43,7 +43,7 @@
 //				saving  - if saving
 //				saved   - if a couple seconds after finished saving
 //				notsave - if not saving nor a couple seconds after finished saving
-//				fps     - current fps
+//				fps     - current fps (currently very inaccurate, please open a pull or issue if you know why)
 		"rom_not_loaded": "${fps}fps"
 	},
 	"labels": {
