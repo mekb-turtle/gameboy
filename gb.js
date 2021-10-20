@@ -1,8 +1,8 @@
 if (require.main === module) {
 	console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
 }
-module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
-	{ text_bar, audio, title, fps: fpsC, terminalOutput }, callQuit, { lastRomFilename }) => {
+module.exports = (electron, window_, alertError, { updateToolbarPaused, updateToolbarMuted }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
+	{ text_bar, audio, title, fps, terminalOutput }, callQuit, { lastRomFilename }) => {
 	const replacePlaceholders = (string, replacers) => {
 		return string.replace(/\$\{([a-zA-Z0-9_\$]+)(\:(\!?)\`([^`]*)\`)?\}/g, (t, t1, t2, t4, t3) => {
 			if (!replacers.hasOwnProperty(t1)) return t;
@@ -14,8 +14,6 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 	const crypto = require("crypto");
 	const cloneBuffer = require("clone-buffer");
 	const fs = require("fs").promises;
-	const fps = fpsC.target * fpsC.multiplier;
-	var currentFramerate = 0;
 	var lastMs = 0;
 	// Date object when user loaded rom
 	var startTimestamp;
@@ -123,7 +121,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 						try {
 							fs.writeFile(lastRomFilename, Buffer.from(`${lastRomFilePrefix}${fname}${lastRomFileSuffix}`));
 						} catch (err) {
-							zErr(err);
+							alertError(err);
 						}
 					} else {
 						// kills gameboy if invalid rom or error loading the rom
@@ -135,7 +133,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 						save = null;
 						updateTitle();
 						initAudio();
-						zErr("Invalid ROM");
+						alertError("Invalid ROM");
 					}
 				} catch (err) {
 					// kills gameboy
@@ -145,7 +143,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 					save = null;
 					updateTitle();
 					initAudio();
-					zErr(err);
+					alertError(err);
 				}
 			};
 			saveFileName = `${fname}.sav`;
@@ -166,10 +164,10 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 					z();
 				}
 			} catch (err) {
-				zErr(err);
+				alertError(err);
 			}
 		} catch (err) {
-			zErr(err);
+			alertError(err);
 		}
 	};
 	const openLastRom = async () => {
@@ -189,7 +187,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 				await openFileHandler(path);
 			}
 		} catch (err) {
-			zErr(err);
+			alertError(err);
 		}
 	};
 	const openRom = async () => {
@@ -243,7 +241,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 			initAudio();
 			updateTitle();
 		} catch (err) {
-			zErr(err);
+			alertError(err);
 		}
 	};
 	var autosave = true;
@@ -263,8 +261,8 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 			saving = true;
 			canSave = false;
 			if (await exists(saveFileName))
-				await fs.copyFile(saveFileName, saveFileName + ".bak").catch(e=>zErr(e));
-			await fs.writeFile(saveFileName, saveFile).catch(e=>{ zErr(e); saving=false; });
+				await fs.copyFile(saveFileName, saveFileName + ".bak").catch(e => alertError(e));
+			await fs.writeFile(saveFileName, saveFile).catch(e=>{ alertError(e); saving=false; });
 			// important to set save variable otherwise rebootRom will load save
 			// from what was read in openRom not actual current save file
 			save = saveS;
@@ -272,9 +270,9 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 			// i can't figure out how to clone a buffer normally
 			lastSave = cloneBuffer(saveFile);
 			saving = false;
-			saveDisplayTime = fps;
+			saveDisplayTime = fps.target;
 		} catch (err) {
-			zErr(err);
+			alertError(err);
 		}
 	};
 	const openState = async () => {
@@ -304,7 +302,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 						message: "Invalid save state file or wrong ROM file",
 					});
 				}
-			}).catch(err => zErr(err));
+			}).catch(err => alertError(err));
 		});
 	};
 	const saveState = async () => {
@@ -327,7 +325,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 		}).then(res => {
 			if (res.canceled) return;
 			if (!res.filePath) return;
-			fs.writeFile(res.filePath, stateFile).then(() => {}).catch(err => zErr(err));
+			fs.writeFile(res.filePath, stateFile).then(() => {}).catch(err => alertError(err));
 		});
 	};
 	// store input buttons
@@ -371,29 +369,23 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 	var framerates = [];
 	var framerateAverage = 0;
 	const frame = () => {
-		const fps = () => {
-			// fps calculation
-			var now = performance.now();
-			currentFramerate = now-lastMs;
-			framerates.push(currentFramerate);
-			lastMs = now;
-		};
-		if (!rom) {
-			fps();
-			return;
+		if (rom) {
+			// probably one of the most important functions
+			// to actually frame advance
+			// press input from buttonsDown
+			gameboy.pressKeys(Object.keys(buttonsDown).filter(e => buttonsDown[e]).map(e => Gameboy.KEYMAP[e]));
+			gameboy.doFrame();
+			// stop same wave when paused
+			frameAdvancedAudio = false;
+			// enable autosave again
+			// shouldn't keep autosaving while paused as gameboy can't change
+			// save data while paused
+			canSave = true;
 		}
-		// probably one of the most important functions
-		// to actually frame advance
-		// press input from buttonsDown
-		gameboy.pressKeys(Object.keys(buttonsDown).filter(e => buttonsDown[e]).map(e => Gameboy.KEYMAP[e]));
-		gameboy.doFrame();
-		fps();
-		// stop same wave when paused
-		frameAdvancedAudio = false;
-		// enable autosave again
-		// shouldn't keep autosaving while paused as gameboy can't change
-		// save data while paused
-		canSave = true;
+		// fps calculation
+		var now = performance.now();
+		framerates.push(now-lastMs);
+		lastMs = now;
 	};
 	// shows Saved text because saving is too quick for the user to see
 	var saveDisplayTime = 0;
@@ -441,7 +433,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 				});
 			}
 		} catch (err) {
-			zErr(err);
+			alertError(err);
 		}
 	};
 	const sendInfo = () => {
@@ -459,15 +451,13 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 		try {
 			setOnIcon(rom);
 		} catch {}
-		var fps = Math.floor(1e3/framerateAverage/fpsC.average_interval);
-		if (fps == Infinity) fps = 0;
 		try {
 			window_.webContents.send("details", rom ? replacePlaceholders(text_bar.rom_loaded, {
 				paused, name, frames: getPrivate().frames,
 				saving, saved: !saving&&saveDisplayTime>0, notsave: saveDisplayTime<=0&&!saving,
-				fps
+				fps: framerateAverage
 			}) : replacePlaceholders(text_bar.rom_not_loaded, {
-				paused, fps
+				paused, fps: framerateAverage
 			}));
 		} catch {}
 	};
@@ -486,12 +476,13 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 	};
 	setInterval(() => {
 		if (framerates.length > 0) {
-			framerateAverage = framerates.reduce((s, a) => s + a, 0) / framerates.length;
+			framerateAverage = Math.floor(1e3 / (framerates.reduce((s, a) => s + a, 0) / (1e3 / fps.target)));
+			if (framerateAverage == Infinity) framerateAverage = 0;
 			framerates = [];
 		} else {
 			framerateAverage = 0;
 		}
-	}, fpsC.average_interval);
+	}, fps.average_interval);
 	// intervals
 	setInterval(() => {
 		// interval for frame advancing while not paused
@@ -499,18 +490,21 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 		canFrameAdvance = true;
 		if (paused) return;
 		frame();
+		// sendAudio
 		if (audio.wait_for_audio) sendAudio();
-	}, Math.floor(1e3/fps));
+	}, Math.floor(1e3 / fps.target));
 	setInterval(() => {
 		// interval for sendFrame
 		sendFrame();
-	}, Math.floor(1e3/fps));
-	if (!audio.wait_for_audio)
+	}, Math.floor(1e3 / fps.target));
+	if (!audio.wait_for_audio) {
 		setInterval(() => {
 			// interval for sendAudio
 			sendAudio();
-		}, Math.floor(1e3/fps));
+		}, Math.floor(1e3 / fps.target));
+	}
 	setInterval(() => {
+		// send info text at bottom of window
 		sendInfo();
 	}, Math.floor(100));
 	setInterval(async () => {
@@ -520,14 +514,14 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 	const togglePaused = () => {
 		// self explanatory
 		paused = !paused;
-		zzz(paused);
+		updateToolbarPaused(paused);
 	};
 	var vol = audio.muted ? 0 : 1;
 	const toggleMute = () => {
 		vol = +vol<=0;
 		window_.webContents.send("volume", vol);
 		initAudio();
-		zzy(!vol);
+		updateToolbarMuted(!vol);
 		return vol;
 	};
 	const frameAdvance = () => {
@@ -540,7 +534,7 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 		}
 		if (!canFrameAdvance) return;
 		// update pause/resume button's label
-		zzz(paused);
+		updateToolbarPaused(paused);
 		if (checkIfRom(true)) return;
 		frame();
 		sendAudio();
@@ -550,8 +544,8 @@ module.exports = (electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, en
 	const callReady = () => {
 		vol = audio.muted ? 0 : 1;
 		window_.webContents.send("volume", vol);
-		zzz(paused);
-		zzy(!vol);
+		updateToolbarPaused(paused);
+		updateToolbarMuted(!vol);
 	}
 	return { openRom, openLastRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady };
 };

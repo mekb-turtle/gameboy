@@ -27,8 +27,7 @@
 	},
 	"fps": {
 		"target": 60, // what it's trying to achieve
-		"multiplier": 2, // not sure why but running at 60 actually is half speed of normal, if someone knows why please open an issue
-		"average_interval": 250 // in milliseconds, how often to update the fps display
+		"average_interval": 250 // in milliseconds, how often to perform fps calculation
 	},
 	"title": "meGB${name:` - `}${name}",
 	"text_bar": {

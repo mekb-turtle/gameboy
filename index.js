@@ -80,7 +80,7 @@ const endRPC = () => {
 const setOnIcon = (t) => {
 	window_.setIcon(t ? gameboyOnIcon : gameboyIcon);
 }
-const zErr = (err) => {
+const alertError = (err) => {
 	console.error(err); // logs error and alerts it too
 	electron.dialog.showErrorBox(typeof err == "string" ? err : (err.name || "Error"), typeof err == "string" ? "" : err.stack || err.toString());
 }
@@ -88,12 +88,12 @@ const zErr = (err) => {
 const zz = m => electron.Menu.setApplicationMenu(electron.Menu.buildFromTemplate(m));
 var menu = [];
 // set pause/resume button's label
-const zzz = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").indexOf(true)].label = p ? config.labels.resume : config.labels.pause; zz(menu); };
+const updateToolbarPaused = (p) => { menu[0].submenu[menu[0].submenu.map(e => e.id == "pause").indexOf(true)].label = p ? config.labels.resume : config.labels.pause; zz(menu); };
 // set muted text
-const zzy = (p) => { if (config.audio.enabled) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
+const updateToolbarMuted = (p) => { if (config.audio.enabled) menu[0].submenu[menu[0].submenu.map(e => e.id == "mute") .indexOf(true)].label = p ? config.labels.unmute : config.labels.mute;  zz(menu); };
 // require gb
 const { openRom, openLastRom, closeRom, rebootRom, openState, saveState, togglePaused, frameAdvance, saveSave, setAutosave, toggleMute, callReady }
-	= require("./gb.js")( electron, window_, zErr, { zzz, zzy }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
+	= require("./gb.js")( electron, window_, alertError, { updateToolbarPaused, updateToolbarMuted }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
 		config, callQuit, { lastRomFilename: gFile(".lastrompath") } ); // load gb.js with variables
 const infoDialog = () => {
 	// info dialog
