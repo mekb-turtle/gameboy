@@ -13,6 +13,6 @@
 		"show-image-terminal": "^1.0.3"
 	},
 	"devDependencies": {
-		"electron": "^13.1.7"
+		"electron": "^15.2.0"
 	}
 }
