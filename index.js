@@ -5,7 +5,7 @@ if (require.main !== module) {
 }
 const electron = require("electron");
 if (typeof electron != "object") {
-	console.error("not running on electron");
+	console.error("Not running on electron");
 	return;
 }
 console.log("Loading...");

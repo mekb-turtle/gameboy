@@ -1,5 +1,6 @@
 if (require.main === module) {
-	console.error(`You are not meant to call ${require("path").basename(__filename)} directly`); return;
+	console.error(`You are not meant to call gb.js directly`);
+	return;
 }
 module.exports = (electron, window_, alertError, { updateToolbarPaused, updateToolbarMuted }, { setRPC, updateRPC, endRPC }, setOnIcon, exists,
 	{ text_bar, audio, title, fps, terminalOutput }, callQuit, { lastRomFilename }) => {
