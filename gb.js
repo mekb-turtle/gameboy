@@ -15,7 +15,6 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 	const crypto = require("crypto");
 	const cloneBuffer = require("clone-buffer");
 	const fs = require("fs").promises;
-	var lastMs = 0;
 	// Date object when user loaded rom
 	var startTimestamp;
 	var rom;
@@ -24,6 +23,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 	var saveFileName;
 	var saving = false;
 	var canSave = false;
+	var savingBeforeUnload = false;
 	const Gameboy = require("serverboy");
 	var gameboy;
 	const checkIfRom = (dontShowDialog) => {
@@ -38,14 +38,16 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		return false;
 	};
 	const saveBeforeUnload = async () => {
-		var s = false;
-		while (saving) {
-			s = true;
-			await new Promise(r => setTimeout(r, 50)); // will wait 50 ms
-		}
-		if (!s) {
+		if (savingBeforeUnload) return false;
+		savingBeforeUnload = true;
+		if (saving)
+			while (saving) {
+				await new Promise(r => setTimeout(r, 50)); // will wait 50 ms
+			}
+		else
 			await saveSave();
-		}
+		savingBeforeUnload = false;
+		return true;
 	};
 	const getPrivate = () => {
 		// gets private serverboy data like rom name
@@ -83,7 +85,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 	const openFileHandler = async (fname) => {
 		try {
 			var fileData = await fs.readFile(fname);
-			await saveBeforeUnload();
+			if (!await saveBeforeUnload()) return;
 			const cHash = () => {
 				romHash = Buffer.concat([
 					Buffer.from("romhash_"),
@@ -192,7 +194,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		}
 	};
 	const openRom = async () => {
-		await saveBeforeUnload();
+		if (!await saveBeforeUnload()) return;
 		var res = await electron.dialog.showOpenDialog(window_, {
 			properties: ["openFile"],
 			buttonLabel: "Open",
@@ -216,7 +218,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 	};
 	const closeRom = async () => {
 		if (checkIfRom(true)) return;
-		await saveBeforeUnload();
+		if (!await saveBeforeUnload()) return;
 		// kills gameboy
 		getPrivate().shutdownEmulation();
 		canSave = false;
@@ -229,7 +231,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 	};
 	const rebootRom = async () => {
 		if (checkIfRom(true)) return;
-		await saveBeforeUnload();
+		if (!await saveBeforeUnload()) return;
 		// restarts gameboy, shouldn't error unless save or rom variable
 		// was somehow changed without openRom
 		getPrivate().shutdownEmulation();
@@ -245,12 +247,13 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 			alertError(err);
 		}
 	};
+	// autosave stuff
 	var autosave = true;
 	const setAutosave = e => autosave = e;
 	var lastSave;
 	const saveSave = async (isManual) => {
 		try {
-			// annoying code
+			// annoying code aaaaaaa
 			if (!(autosave || isManual)) return;
 			if (saving) return;
 			if (!canSave) return;
@@ -269,9 +272,17 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 			save = saveS;
 			// have to import a whole package just to check if nothing changed
 			// i can't figure out how to clone a buffer normally
+			// i don't think this is causing most lag as i don't see a difference without autosave
+			// or more lag when saving, but i guess i'll make this an option in the future to check if
+			// the save has actually changed to save disk writes
 			lastSave = cloneBuffer(saveFile);
+			if (hasSavedTimeout) { clearTimeout(hasSavedTimeout); hasSavedTimeout = null; }
+			hasSavedTimeout = setTimeout(() => {
+				hasSavedText = false;
+				hasSavedTimeout = null;
+			}, 1000);
+			hasSavedText = true;
 			saving = false;
-			saveDisplayTime = fps.target;
 		} catch (err) {
 			alertError(err);
 		}
@@ -280,7 +291,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		// not done yet, serverboy's setMemory function is experimental
 		if (!isExperimental()) return;
 		if (checkIfRom()) return;
-		await saveBeforeUnload();
+		if (!await saveBeforeUnload()) return;
 		electron.dialog.showOpenDialog(window_, {
 			properties: ["openFile"],
 			buttonLabel: "Open",
@@ -310,7 +321,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		// serverboy's getMemory works i think but setMemory doesn't
 		if (!isExperimental()) return;
 		if (checkIfRom()) return;
-		await saveBeforeUnload();
+		if (!await saveBeforeUnload()) return;
 		canSave = false;
 		var mem = gameboy.getMemory();
 		var stateFile = Buffer.concat([romHash, Buffer.from(mem)]);
@@ -335,27 +346,31 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		START: false, SELECT: false,
 		UP: false, DOWN: false, LEFT: false, RIGHT: false,
 	};
-	electron.ipcMain.handle("quitgame", async (event) => {
+	const quitHandler = () => {
 		// quit game is sent when unload in preload.js
 		// this is ran when the user closes the window
 		// make sure to save the game
-		await saveBeforeUnload();
-		// update some stuff
-		if (!checkIfRom(true)) {
-			// kills gameboy
-			getPrivate().shutdownEmulation();
-			canSave = false;
-			gameboy = null;
-			rom = null;
-			save = null;
-			startTimestamp = null;
-		}
-		initAudio();
-		endRPC();
-		updateRPC();
-		updateTitle();
-		callQuit();
-	});
+		saveBeforeUnload(true).then(p => {
+			if (!p) return;
+			// update some stuff
+			if (!checkIfRom(true)) {
+				// kills gameboy
+				getPrivate().shutdownEmulation();
+				canSave = false;
+				gameboy = null;
+				rom = null;
+				save = null;
+				startTimestamp = null;
+			}
+			initAudio();
+			endRPC();
+			updateRPC();
+			updateTitle();
+			// finally quit
+			callQuit();
+		});
+	};
+	electron.ipcMain.handle("quitgame", quitHandler);
 	electron.ipcMain.handle("buttonpress", (event, o) => {
 		if (!o.button) return;
 		// make sure o variable is valid
@@ -367,29 +382,43 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 	});
 	// framerate stuff
 	var frameAdvancedAudio = false;
-	var framerates = [];
-	var framerateAverage = 0;
+	var framerate = 0;
+	var framerateFrames = 0;
+	var framerateLastTime = performance.now();
+	var doingFrame = false;
+	// screen data
+	var scr = null;
 	const frame = () => {
+		// don't double up frame and fuck up fps calculation
+		if (doingFrame) return;
+		doingFrame = true;
 		if (rom) {
-			// probably one of the most important functions
-			// to actually frame advance
 			// press input from buttonsDown
 			gameboy.pressKeys(Object.keys(buttonsDown).filter(e => buttonsDown[e]).map(e => Gameboy.KEYMAP[e]));
-			gameboy.doFrame();
+			// do the frame
+			scr = gameboy.doFrame();
 			// stop same wave when paused
 			frameAdvancedAudio = false;
 			// enable autosave again
 			// shouldn't keep autosaving while paused as gameboy can't change
 			// save data while paused
 			canSave = true;
+		} else {
+			scr = null;
 		}
 		// fps calculation
+		++framerateFrames;
 		var now = performance.now();
-		framerates.push(now-lastMs);
-		lastMs = now;
+		if (now - framerateLastTime >= 1e3) {
+			framerate = framerateFrames;
+			framerateLastTime = now;
+			framerateFrames = 0;
+		}
+		doingFrame = false;
 	};
 	// shows Saved text because saving is too quick for the user to see
-	var saveDisplayTime = 0;
+	var hasSavedText = false;
+	var hasSavedTimeout = null;
 	// terminal stuff
 	var termImg;
 	var jimp;
@@ -399,10 +428,9 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		Jimp = require("jimp");
 		canDraw = 0;
 	}
-	// send the screen data and details to the preload.js
+	// send the screen data to preload.js
 	const sendFrame = () => {
-		var scr;
-		if (rom) scr = gameboy.getScreen();
+		if (!rom) scr = null;
 		if (terminalOutput.enabled) {
 			var perfNow = performance.now();
 			if (perfNow > canDraw && scr) {
@@ -419,6 +447,7 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 			window_.webContents.send("rendergb", scr);
 		} catch {}
 	};
+	// initialize the audio library
 	const initAudio = () => {
 		try {
 			if (!audio?.enabled || !gameboy || !rom) {
@@ -437,9 +466,9 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 			alertError(err);
 		}
 	};
+	// send details to preload.js
 	const sendInfo = () => {
 		var name = getRomName();
-		if (saveDisplayTime > 0) --saveDisplayTime;
 		try {
 			setRPC({
 				start_timestamp: startTimestamp,
@@ -455,10 +484,10 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		try {
 			window_.webContents.send("details", rom ? replacePlaceholders(text_bar.rom_loaded, {
 				paused, name, frames: getPrivate().frames,
-				saving, saved: !saving&&saveDisplayTime>0, notsave: saveDisplayTime<=0&&!saving,
-				fps: framerateAverage
+				saving, saved: !saving&&hasSavedText, notsave: !hasSavedText&&!saving,
+				fps: framerate
 			}) : replacePlaceholders(text_bar.rom_not_loaded, {
-				paused, fps: framerateAverage
+				paused, fps: framerate
 			}));
 		} catch {}
 	};
@@ -470,20 +499,12 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 				if (audio.send_once_while_paused && frameAdvancedAudio && paused) return;
 				frameAdvancedAudio = true;
 				var a = gameboy.getAudio();
-				if (a.filter((item, index, array) => index == array.indexOf(item)).length > 1)
+				if (a.filter((item, index, array) => index == array.indexOf(item)).length > 1) {
 					window_.webContents.send("audio", a);
+				}
 			}
 		} catch {}
 	};
-	setInterval(() => {
-		if (framerates.length > 0) {
-			framerateAverage = Math.floor(1e3 / (framerates.reduce((s, a) => s + a, 0) / (1e3 / fps.target)));
-			if (framerateAverage == Infinity) framerateAverage = 0;
-			framerates = [];
-		} else {
-			framerateAverage = 0;
-		}
-	}, fps.average_interval);
 	// intervals
 	setInterval(() => {
 		// interval for frame advancing while not paused
@@ -491,23 +512,14 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		canFrameAdvance = true;
 		if (paused) return;
 		frame();
-		// sendAudio
-		if (audio.wait_for_audio) sendAudio();
+		sendAudio();
 	}, Math.floor(1e3 / fps.target));
 	setInterval(() => {
-		// interval for sendFrame
 		sendFrame();
-	}, Math.floor(1e3 / fps.target));
-	if (!audio.wait_for_audio) {
-		setInterval(() => {
-			// interval for sendAudio
-			sendAudio();
-		}, Math.floor(1e3 / fps.target));
-	}
+	}, Math.floor(1e3 / fps.display_target));
 	setInterval(() => {
-		// send info text at bottom of window
 		sendInfo();
-	}, Math.floor(100));
+	}, Math.floor(1e3 / fps.info_target));
 	setInterval(async () => {
 		// interval for autosaving
 		await saveSave();
@@ -517,9 +529,9 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		paused = !paused;
 		updateToolbarPaused(paused);
 	};
-	var vol = audio.muted ? 0 : 1;
+	var vol = +!audio.muted;
 	const toggleMute = () => {
-		vol = +vol<=0;
+		vol = vol > 0 ? 0 : 1;
 		window_.webContents.send("volume", vol);
 		initAudio();
 		updateToolbarMuted(!vol);
@@ -529,8 +541,6 @@ module.exports = (electron, window_, alertError, { updateToolbarPaused, updateTo
 		if (!paused) {
 			// pause if not paused
 			paused = true;
-			// doesn't really make a difference if you did another frame advance
-			// right before pausing
 			return;
 		}
 		if (!canFrameAdvance) return;

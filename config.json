@@ -5,7 +5,6 @@
 		"muted": true, // is muted by default?
 		"is_float": true, // use Float32 or Int32
 		"flush_time": 150, // how often in milliseconds to flush audio buffer, longer means more lag, shorter means more awful to listen to, i recommend around 150
-		"wait_for_audio": false, // whether to wait for the frame to finish before sending audio or not, i recommend you keep this disabled otherwise the audio can sound more choppier
 		"send_once_while_paused": true // whether to keep sending audio or only send once when frame advancing, disabling this will cause the same audio sample to be stuck when paused
 	},
 	"discord_rpc": { // discord rpc is supported
@@ -26,8 +25,9 @@
 		"delay": 500 // in milliseconds, so the terminal can keep up
 	},
 	"fps": {
-		"target": 60, // what it's trying to achieve
-		"average_interval": 250 // in milliseconds, how often to perform fps calculation
+		"target": 60, // rate of emulating one frame and sending audio
+		"display_target": 60, // rate of updating the screen display, no need to be higher than target
+		"info_target": 10 // rate of updating the bottom text
 	},
 	"title": "meGB${name:` - `}${name}",
 	"text_bar": {
@@ -41,9 +41,9 @@
 //				name    - display name of rom
 //				frames  - how many frames past rom load
 //				saving  - if saving
-//				saved   - if a couple seconds after finished saving
-//				notsave - if not saving nor a couple seconds after finished saving
-//				fps     - current fps (currently very inaccurate, please open a pull or issue if you know why)
+//				saved   - between finished saving and a second after
+//				notsave - if neither of the two above
+//				fps     - current fps (currently VERY inaccurate, please open a pull or issue if you know why)
 		"rom_not_loaded": "${fps}fps"
 	},
 	"labels": {
