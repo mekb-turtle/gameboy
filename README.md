@@ -7,12 +7,12 @@ Has Discord RPC support to show information like what ROM you're playing.\
 Audio works, but awful to listen to so muted by default.
 
 - [x] Save files
+- [ ] Make framerate display actually work
+- [ ] Better performance
+- [ ] Fix audio (stop clicks)
 - [ ] Export/import save (already possible manually)
 - [ ] Save states
-- [ ] Better performance
-- [ ] Make framerate display actually work
-- [ ] Stretch audio to match framerate (not "jittery")
-- [ ] Stop audio clicks
+- [ ] Movie recording
 
 Screenshots:
 
